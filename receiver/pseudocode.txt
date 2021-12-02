@@ -49,9 +49,6 @@ void send_data()
 	counter++;
 }
 
-01010100 01011010
-54 5A
-
 bool can_write()
 {
 	return (UCSR0A & 0b00100000);

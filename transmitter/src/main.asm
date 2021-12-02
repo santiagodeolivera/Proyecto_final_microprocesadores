@@ -1,5 +1,7 @@
 .ORG 0x0000
 	JMP start
+.ORG 0x0008
+	JMP pcint1_start
 .ORG 0x0016
 	JMP tmr1_start
 .ORG 0x001C
@@ -7,10 +9,10 @@
 
 .INCLUDE "lib.asm"
 
-#define BUFFER_SIZE 2
+#define BUFFER_SIZE 512
 
 .DSEG
-	data_buffer: .BYTE BUFFER_SIZE + 2
+	data_buffer: .BYTE BUFFER_SIZE
 
 	shield_buffer: .BYTE 4
 	shield_digits: .BYTE 16
@@ -62,7 +64,7 @@ start:
 	STZ 0b11111111
 
 	SETZ tmr1_state
-	STZ 0
+	STZ -1
 
 	SETZ tmr1_counter
 	STZ 0
@@ -76,7 +78,7 @@ start:
 	STZ -1
 
 	TIMER0SETUP 50
-	TIMER1SETUP 100
+	TIMER1SETUP 20
 	SHIELDSETUP
 
 	LDI r16, 0b01000000
@@ -89,6 +91,10 @@ start:
 	STS UBRR0H, r16
 	LDI r16, 0b11111111
 	STS UBRR0L, r16
+
+	LDI r16, 0b00000010
+	STS PCMSK1, r16
+	STS PCICR, r16
 
 sei
 program:
@@ -114,6 +120,27 @@ program:
 	POP @0
 .ENDMACRO
 
+// pcint1 interruption
+pcint1_start:
+	PUSH r0
+	IN r0, SREG
+	PUSH r0
+	PUSH r16
+
+	LDS r16, tmr1_state
+	CPI r16, 0xFF
+	BRNE pcint1_end
+
+	LDI r16, 0
+	STS tmr1_state, r16
+
+pcint1_end:
+	POP r16
+	POP r0
+	OUT SREG, r0
+	POP r0
+	RETI
+
 // timer 1 interruption
 .DSEG
 	tmr1_state: .BYTE 1
@@ -129,8 +156,10 @@ tmr1_start:
 	PUSH r17
 
 	LDS r17, tmr1_state
+	CPI r17, -1
+		BREQ tmr1_end
 	CPI r17, 0
-	BREQ tmr1_call_write_data
+		BREQ tmr1_call_write_data
 
 	CALL send_data
 	RJMP tmr1_end
@@ -178,8 +207,25 @@ write_data:
 	CPWI r18, r19, BUFFER_SIZE
 	BRNE writedata_end
 	
-	STS data_buffer + BUFFER_SIZE + 0, r20
-	STS data_buffer + BUFFER_SIZE + 1, r21
+		PUSH r22
+		PUSH r23
+		PUSH r24
+
+		BYTETONIBBLE r20, r22, r23
+		LOADBYTEFROMSLICE r24, shield_digits, r22
+		STS shield_buffer + 0, r24
+		LOADBYTEFROMSLICE r24, shield_digits, r23
+		STS shield_buffer + 1, r24
+
+		BYTETONIBBLE r21, r22, r23
+		LOADBYTEFROMSLICE r24, shield_digits, r22
+		STS shield_buffer + 2, r24
+		LOADBYTEFROMSLICE r24, shield_digits, r23
+		STS shield_buffer + 3, r24
+
+		POP r24
+		POP r23
+		POP r22
 
 	LDI r21, 1
 	STS tmr1_state, r21
@@ -208,7 +254,7 @@ send_data:
 	LDS r17, tmr1_counter + 0
 	LDS r18, tmr1_counter + 1
 
-	CPWI r17, r18, BUFFER_SIZE + 2
+	CPWI r17, r18, BUFFER_SIZE
 	BRSH senddata_end0
 	RJMP senddata_continue0
 
@@ -233,6 +279,15 @@ send_data:
 		INCW r17, r18
 		STS tmr1_counter + 0, r17
 		STS tmr1_counter + 1, r18
+
+		CPWI r17, r18, BUFFER_SIZE
+		BRLO senddata_end0
+
+			LDS r16, PCMSK1
+			ANDI r16, 0b11111101
+			STS PCMSK1, r16
+			LDI r16, 0b00000000
+			STS UCSR0B, r16
 
 		RJMP senddata_end
 

@@ -1,0 +1,37 @@
+#define BUFFER_SIZE 2
+static byte[] data_buffer = new byte[BUFFER_SIZE];
+static ushort counter = 0;
+static byte hamming_buffer = -1;
+void on_read_usart()
+{
+	if(counter == -1) return;
+	byte number = read_byte();
+	number &= 0b11111110;
+	if(hamming_buffer & 0b00000001)
+	{
+		hamming_buffer = number;
+		return;
+	}
+	byte result = hamming_to_byte(hamming_buffer, number);
+	data_buffer[counter] = result;
+	counter++;
+	if(counter >= BUFFER_SIZE)
+	{
+		display_checksum();
+		counter = -1;
+	}
+}
+
+void display_checksum()
+{
+	ushort c = 0;
+	ushort checksum = 0;
+	while(c < BUFFER_SIZE)
+	{
+		checksum += data_buffer[c];
+		c++;
+	}
+	display_on_shield(checksum);
+}
+
+void display_on_shield(short n);

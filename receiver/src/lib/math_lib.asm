@@ -60,3 +60,9 @@
 	BRCC PC+2
 		INC @0
 .ENDMACRO
+
+; ADDW2 <high_register_result> <low_register_result> <register_high> <register_low>
+.MACRO ADDW2
+	ADD @0, @2
+	ADDW1 @0, @1, @3
+.ENDMACRO

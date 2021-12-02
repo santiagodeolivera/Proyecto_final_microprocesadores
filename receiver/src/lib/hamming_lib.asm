@@ -1,5 +1,6 @@
 ; NIBBLETOHAMMING <input> <output> <reg2> <reg3>
 .MACRO NIBBLETOHAMMING
+	PUSH @0
 	PUSH @2
 	PUSH @3
 
@@ -40,12 +41,14 @@
 
 	POP @3
 	POP @2
+	POP @0
 .ENDMACRO
 
 ; @0: input
 ; @1: output
 ; HAMMINGTONIBBLE <input> <output> <reg1> <reg2> <reg3>
 .MACRO HAMMINGTONIBBLE
+	PUSH @0
 	PUSH @2
 	PUSH @3
 	PUSH @4
@@ -148,6 +151,7 @@
 	POP @4
 	POP @3
 	POP @2
+	POP @0
 .ENDMACRO
 
 
@@ -178,4 +182,21 @@
 	BYTETONIBBLE @0, @2, @3
 	NIBBLETOHAMMING @2, @1, @0, @3
 	NIBBLETOHAMMING @3, @2, @1, @0
+.ENDMACRO
+
+; HAMMINGTOBYTE <input_high> <input_low> <output> <reg1> <reg2>
+.MACRO HAMMINGTOBYTE
+	PUSH @0
+	PUSH @1
+	PUSH @3
+	PUSH @4
+
+	HAMMINGTONIBBLE @0, @3, @2, @1, @4
+	HAMMINGTONIBBLE @1, @4, @2, @0, @3
+	NIBBLETOBYTE @3, @4, @2
+
+	POP @4
+	POP @3
+	POP @1
+	POP @0
 .ENDMACRO

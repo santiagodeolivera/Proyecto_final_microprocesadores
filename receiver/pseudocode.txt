@@ -1,70 +1,37 @@
-#define BUFFER_SIZE 512
-static byte[] data_buffer = new byte[BUFFER_SIZE + 2];
-
-static bool state = false;
+#define BUFFER_SIZE 2
+static byte[] data_buffer = new byte[BUFFER_SIZE];
 static ushort counter = 0;
 static byte hamming_buffer = -1;
-static short checksum = 0;
-void main()
+void on_read_usart()
 {
-
-	if(!state)
+	if(counter == -1) return;
+	byte number = read_byte();
+	number &= 0b11111110;
+	if(hamming_buffer & 0b00000001)
 	{
-		write_data();
-	}
-	else
-	{
-		send_data();
-	}
-}
-
-void write_data()
-{
-	byte number = generate_pseudorandom_number();
-	data_buffer[counter] = number;
-	checksum += number;
-	counter++;
-	if(counter == BUFFER_SIZE)
-	{
-		data_buffer[BUFFER_SIZE + 0] = checksum.high();
-		data_buffer[BUFFER_SIZE + 1] = checksum.low();
-		state = true;
-		counter = 0;
-	}
-}
-
-void send_data()
-{
-	if(counter >= BUFFER_SIZE + 2) return;
-	if(!can_write()) return;
-
-	if(~(hamming_buffer & 0b10000000))
-	{
-		UDR0 = hamming_buffer >> 1;
-		hamming_buffer = -1;
+		hamming_buffer = number;
 		return;
 	}
-
-	write_byte(data_buffer[counter]);
+	byte result = hamming_to_byte(hamming_buffer, number);
+	data_buffer[counter] = result;
 	counter++;
+	if(counter >= BUFFER_SIZE)
+	{
+		display_checksum();
+		counter = -1;
+	}
 }
 
-bool can_write()
+void display_checksum()
 {
-	return (UCSR0A & 0b00100000);
+	ushort c = 0;
+	ushort checksum = 0;
+	while(c < BUFFER_SIZE)
+	{
+		checksum += data_buffer[c];
+		c++;
+	}
+	store_on_shield_buffer(checksum);
 }
 
-void write_byte(byte info)
-{
-	(byte hamm_high, byte hamm_low) = byte_to_hamming(info);
-	UDR0 = hamm_high;
-	hamming_buffer = hamm_low >> 1;
-}
-
-byte generate_pseudorandom_number()
-{
-	static byte pseudorandom_mem = 0b11111111;
-	pseudorandom_mem ^= (pseudorandom_mem << 3);
-	pseudorandom_mem ^= (pseudorandom_mem >> 5);
-	return pseudorandom_mem;
-}
+void store_on_shield_buffer(short n);

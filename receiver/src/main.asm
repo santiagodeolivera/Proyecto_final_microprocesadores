@@ -1,13 +1,13 @@
 .ORG 0x0000
 	JMP start
-.ORG 0x0016
-	JMP tmr1_start
+.ORG 0x001C
+	JMP tmr0_start
 .ORG 0x0024
 	JMP usartR_start
 
 .INCLUDE "lib.asm"
 
-#define BUFFER_SIZE 2
+#define BUFFER_SIZE 4
 
 .DSEG
 	data_buffer: .BYTE BUFFER_SIZE
@@ -57,6 +57,10 @@ start:
 	STZ 0b01000100
 	STZ 0b00100010
 	STZ 0b00010001
+
+	SETZ usartR_hamming_buffer
+	STZ -1
+	STZ -1
 	
 	SETZ usartR_counter
 	STZ 0
@@ -64,13 +68,16 @@ start:
 
 
 	TIMER0SETUP 50
-	TIMER1SETUP 100
 	SHIELDSETUP
 
 	LDI r16, 0b01000000
 	STS UCSR0A, r16
-	LDI r16, 0b00001000
+
+	LDI r16, 0b00000000
 	STS UCSR0B, r16
+	LDI r16, 0b10010000
+	STS UCSR0B, r16
+
 	LDI r16, 0b00001110
 	STS UCSR0C, r16
 	LDI r16, 0b00001111
@@ -102,9 +109,10 @@ program:
 	POP @0
 .ENDMACRO
 
-// timer 1 interruption
+// USART read complete interruption
 .DSEG
 	usartR_counter: .BYTE 2
+	usartR_hamming_buffer: .BYTE 1
 .CSEG
 usartR_start:
 	PUSH r0
@@ -112,15 +120,140 @@ usartR_start:
 	PUSH r0
 	PUSH r16
 	PUSH r17
+	PUSH r18
+	PUSH r19
+	PUSH r20
+	PUSH r21
 
+	LDS r17, usartR_counter + 0
+	CPI r17, 0xFF
+	BRNE usartR_continue
+		JMP usartR_end
+
+	usartR_continue:
+	LDS r17, UDR0
+	ANDI r17, 0b11111110
+
+	LDS r18, usartR_hamming_buffer
+	ORI r18, 0b11111110
+	CPI r18, 0xFF
+	BRNE usartR_store_byte
+		STS usartR_hamming_buffer, r17
+		RJMP usartR_end
+
+	usartR_store_byte:
+		LDS r18, usartR_hamming_buffer
+		HAMMINGTOBYTE r18, r17, r19, r20, r21
+
+		SETZ usartR_hamming_buffer
+		STZ -1
+
+		LDS r20, usartR_counter + 0
+		LDS r21, usartR_counter + 1
+		SETZ data_buffer
+		SUMZW r20, r21
+		ST Z, r19
+
+		INCW r20, r21
+		STS usartR_counter + 0, r20
+		STS usartR_counter + 1, r21
+
+		CPWI r20, r21, BUFFER_SIZE
+		BRLO usartR_end
+
+			CALL display_checksum
+			LDI r20, -1
+			LDI r21, -1
+			STS usartR_counter + 0, r20
+			STS usartR_counter + 1, r21
 	
 usartR_end:
+	POP r21
+	POP r20
+	POP r19
+	POP r18
 	POP r17
 	POP r16
 	POP r0
 	OUT SREG, r0
 	POP r0
 	RETI
+
+// void display_checksum();
+display_checksum:
+	PUSH r16
+	PUSH r17
+	PUSH r18
+	PUSH r19
+	PUSH r20
+	PUSH r21
+
+	CLR r17
+	CLR r18
+	CLR r19
+	CLR r20
+
+	displaychecksum_start:
+	SETZ data_buffer
+	SUMZW r17, r18
+	LD r21, Z
+
+	ADDW1 r19, r20, r21
+	INCW r17, r18
+
+	CPWI r17, r18, BUFFER_SIZE
+	BRLO displaychecksum_start
+
+	MOV r16, r19
+	MOV r17, r20
+	CALL store_on_shield
+
+	POP r21
+	POP r20
+	POP r19
+	POP r18
+	POP r17
+	POP r16
+	RET
+
+// void store_on_shield(short n);
+store_on_shield:
+	PUSH r16
+	PUSH r17
+	PUSH r18
+	PUSH r19
+
+	MOV r18, r16
+	LSR r18
+	LSR r18
+	LSR r18
+	LSR r18
+	LOADBYTEFROMSLICE r19, shield_digits, r18
+	STS shield_buffer + 0, r19
+
+	MOV r18, r16
+	ANDI r18, 0b00001111
+	LOADBYTEFROMSLICE r19, shield_digits, r18
+	STS shield_buffer + 1, r19
+
+	MOV r18, r17
+	LSR r18
+	LSR r18
+	LSR r18
+	LSR r18
+	LOADBYTEFROMSLICE r19, shield_digits, r18
+	STS shield_buffer + 2, r19
+
+	MOV r18, r17
+	ANDI r18, 0b00001111
+	LOADBYTEFROMSLICE r19, shield_digits, r18
+	STS shield_buffer + 3, r19
+
+	POP r19
+	POP r18
+	POP r17
+	POP r16
+	RET
 
 // timer 0 interruption
 tmr0_start:

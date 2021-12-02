@@ -7,7 +7,7 @@
 
 .INCLUDE "lib.asm"
 
-#define BUFFER_SIZE 4
+#define BUFFER_SIZE 512
 
 .DSEG
 	data_buffer: .BYTE BUFFER_SIZE
@@ -89,25 +89,6 @@ sei
 program:
 	rJMP program
 
-; WRITEBYTE <input> <reg2> <reg3> <reg4>
-.MACRO WRITEBYTE
-	PUSH @0
-	PUSH @1
-	PUSH @2
-	PUSH @3
-
-	BYTETONIBBLE @0, @1, @2
-	NIBBLETOHAMMING @1, @3, @0, @2
-	STS UDR0, @3
-	NIBBLETOHAMMING @2, @3, @0, @1
-	LSR @3
-	STS tmr1_hamming_buffer, @3
-
-	POP @3
-	POP @2
-	POP @1
-	POP @0
-.ENDMACRO
 
 // USART read complete interruption
 .DSEG
@@ -166,6 +147,9 @@ usartR_start:
 			LDI r21, -1
 			STS usartR_counter + 0, r20
 			STS usartR_counter + 1, r21
+			LDI r16, 0
+			STS UCSR0B, r16
+
 	
 usartR_end:
 	POP r21

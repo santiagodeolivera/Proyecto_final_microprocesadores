@@ -7,10 +7,14 @@
 
 .INCLUDE "lib.asm"
 
-#define tmr1_size 4
+#define BUFFER_SIZE 2
 
 .DSEG
-	data_buffer: .BYTE 512
+	data_buffer: .BYTE BUFFER_SIZE + 2
+
+	shield_buffer: .BYTE 4
+	shield_digits: .BYTE 16
+	digits_buffer: .BYTE 4
 .CSEG
 start:
 	LDI r16, 0b00000010
@@ -24,7 +28,7 @@ start:
 	OUT DDRB, r16
 	OUT PORTB, r16
 
-	SETZ receiver_shield_digits
+	SETZ shield_digits
 	STZ 0b00000011 ; 0
 	STZ 0b10011111 ; 1
 	STZ 0b00100101 ; 2
@@ -41,9 +45,24 @@ start:
 	STZ 0b10000101 ; D
 	STZ 0b01100001 ; E
 	STZ 0b01110001 ; F
+
+	SETZ shield_buffer
+	STZ -1
+	STZ -1
+	STZ -1
+	STZ -1
+
+	SETZ digits_buffer
+	STZ 0b10001000
+	STZ 0b01000100
+	STZ 0b00100010
+	STZ 0b00010001
 	
 	SETZ tmr1_hamming_buffer
 	STZ 0b11111111
+
+	SETZ tmr1_state
+	STZ 0
 
 	SETZ tmr1_counter
 	STZ 0
@@ -57,7 +76,7 @@ start:
 	STZ -1
 
 	TIMER0SETUP 50
-	TIMER1SETUP 32767
+	TIMER1SETUP 100
 	SHIELDSETUP
 
 	LDI r16, 0b01000000
@@ -77,16 +96,22 @@ program:
 
 ; WRITEBYTE <input> <reg2> <reg3> <reg4>
 .MACRO WRITEBYTE
+	PUSH @0
+	PUSH @1
+	PUSH @2
+	PUSH @3
+
 	BYTETONIBBLE @0, @1, @2
-
 	NIBBLETOHAMMING @1, @3, @0, @2
-
 	STS UDR0, @3
-
 	NIBBLETOHAMMING @2, @3, @0, @1
 	LSR @3
-
 	STS tmr1_hamming_buffer, @3
+
+	POP @3
+	POP @2
+	POP @1
+	POP @0
 .ENDMACRO
 
 // timer 1 interruption
@@ -102,40 +127,18 @@ tmr1_start:
 	PUSH r0
 	PUSH r16
 	PUSH r17
-	PUSH r18
-	PUSH r19
-	PUSH r20
-	PUSH r21
 
-	LDS r19, UCSR0A
-	ORI r19, 0b11011111
-	CPI r19, 0xFF
-	BRNE tmr1_end
+	LDS r17, tmr1_state
+	CPI r17, 0
+	BREQ tmr1_call_write_data
 
-	LDS r17, tmr1_counter + 0
-	LDS r18, tmr1_counter + 1
+	CALL send_data
+	RJMP tmr1_end
 
-	LDS r20, tmr1_hamming_buffer
-	SBRS r20, 7
-		JMP tmr1_send_store_hamming
-
-	CPWI r17, r18, tmr1_size
-	BREQ tmr1_send_high_checksum
-	CPWI r17, r18, tmr1_size + 1
-	BREQ tmr1_send_low_checksum0
-	CPWI r17, r18, tmr1_size + 2
-	BREQ tmr1_end
-
-	JMP tmr1_generate_number
-
-tmr1_send_low_checksum0:
-	JMP tmr1_send_low_checksum
-
+	tmr1_call_write_data:
+		CALL write_data
+	
 tmr1_end:
-	POP r21
-	POP r20
-	POP r19
-	POP r18
 	POP r17
 	POP r16
 	POP r0
@@ -143,74 +146,119 @@ tmr1_end:
 	POP r0
 	RETI
 
-tmr1_send_high_checksum:
-	PUSH r16
-	PUSH r17
-
-	LDS r17, tmr1_checksum + 0
-	WRITEBYTE r17, r18, r19, r20
-
-	POP r17
-	POP r16
-	RJMP tmr1_end
-
-tmr1_send_low_checksum:
-	PUSH r16
-	PUSH r17
-
-	LDS r17, tmr1_checksum + 1
-	WRITEBYTE r17, r18, r19, r20
-
-	POP r17
-	POP r16
-	RJMP tmr1_end
-
-tmr1_generate_number:
+// void send_data();
+write_data:
 	PUSH r16
 	PUSH r17
 	PUSH r18
 	PUSH r19
+	PUSH r20
+	PUSH r21
 
 	CALL generate_pseudorandom_number
 	MOV r17, r16
 
-	LDS r18, tmr1_checksum + 0
-	LDS r19, tmr1_checksum + 1
-	ADDW1 r18, r19, r17
-	STS tmr1_checksum + 0, r18
-	STS tmr1_checksum + 1, r19
+	LDS r18, tmr1_counter + 0
+	LDS r19, tmr1_counter + 1
 
-	WRITEBYTE r17, r18, r19, r20
+	SETZ data_buffer
+	SUMZW r18, r19
+	ST Z, r17
 
+	LDS r20, tmr1_checksum + 0
+	LDS r21, tmr1_checksum + 1
+	ADDW1 r20, r21, r17
+	STS tmr1_checksum + 0, r20
+	STS tmr1_checksum + 1, r21
+
+	INCW r18, r19
+	STS tmr1_counter + 0, r18
+	STS tmr1_counter + 1, r19
+
+	CPWI r18, r19, BUFFER_SIZE
+	BRNE writedata_end
+	
+	STS data_buffer + BUFFER_SIZE + 0, r20
+	STS data_buffer + BUFFER_SIZE + 1, r21
+
+	LDI r21, 1
+	STS tmr1_state, r21
+
+	LDI r21, 0
+	STS tmr1_counter + 0, r21
+	STS tmr1_counter + 1, r21
+
+writedata_end:
+	POP r21
+	POP r20
 	POP r19
 	POP r18
 	POP r17
 	POP r16
-	RJMP tmr1_end
+	RET
 
-tmr1_send_store_hamming:
+// void send_data();
+send_data:
 	PUSH r16
 	PUSH r17
 	PUSH r18
+	PUSH r19
+	PUSH r20
 
 	LDS r17, tmr1_counter + 0
 	LDS r18, tmr1_counter + 1
-	INCW r17, r18
-	STS tmr1_counter + 0, r17
-	STS tmr1_counter + 1, r18
 
-	LDS r17, tmr1_hamming_buffer
-	LSL r17
-	STS UDR0, r17
+	CPWI r17, r18, BUFFER_SIZE + 2
+	BRSH senddata_end0
+	RJMP senddata_continue0
 
-	LDI r17, 0b11111111
-	STS tmr1_hamming_buffer, r17
+	senddata_end0:
+		JMP senddata_end
+	senddata_continue0:
 
+	CALL can_write
+	CPI r16, 0
+	BREQ senddata_end0
+
+	LDS r19, tmr1_hamming_buffer
+	MOV r20, r19
+	ORI r19, 0b01111111
+	CPI r19, 0xFF
+	BREQ senddata_write_normal
+		LSL r20
+		STS UDR0, r20
+		LDI r20, 0b11111111
+		STS tmr1_hamming_buffer, r20
+
+		INCW r17, r18
+		STS tmr1_counter + 0, r17
+		STS tmr1_counter + 1, r18
+
+		RJMP senddata_end
+
+	senddata_write_normal:
+		SETZ data_buffer
+		SUMZW r17, r18
+		LD r19, Z
+		WRITEBYTE r19, r18, r17, r16
+
+senddata_end:
+	POP r20
+	POP r19
 	POP r18
 	POP r17
 	POP r16
-	RJMP tmr1_end
+	RET
 
+// byte can_write();
+can_write:
+	LDS r16, UCSR0A
+	ORI r16, 0b11011111
+	CPI r16, 0xFF
+	IN r16, SREG
+	LSR r16
+	ANDI r16, 0b00000001
+	RET
 
 // timer 0 interruption
 tmr0_start:
@@ -243,11 +291,11 @@ display_shield:
 	PUSH r2
 	LDS r22, display_shield_digit
 
-	SETZ receiver_shield_buffer
+	SETZ shield_buffer
 	SUMZ r22
 	LD r1, Z
 
-	SETZ receiver_digit_buffer
+	SETZ digits_buffer
 	SUMZ r22
 	LD r2, Z
 
@@ -272,7 +320,7 @@ display_shield_reset:
 	LDI r22, 0
 	RJMP display_shield_end
 
-/// generate_pseudorandom_number(): byte
+// byte generate_pseudorandom_number();
 .DSEG
 	pseudorand_mem: .BYTE 1
 .CSEG

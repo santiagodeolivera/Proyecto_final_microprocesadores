@@ -31,7 +31,7 @@ void display_checksum()
 		checksum += data_buffer[c];
 		c++;
 	}
-	store_on_shield_buffer(checksum);
+	display_on_shield(checksum);
 }
 
-void store_on_shield_buffer(short n);
+void display_on_shield(short n);

@@ -10,24 +10,28 @@
 #define BUFFER_SIZE 512
 
 .DSEG
+	; Stores the pseudorandom bytes
 	data_buffer: .BYTE BUFFER_SIZE
 
+	; Stores the hamming bytes before processing them
+	hamming_buffer: .BYTE BUFFER_SIZE * 2
+
+	; This memory space acts as an intermediate between the shield and other parts of the program which modify what the shield displays
 	shield_buffer: .BYTE 4
+
+	; A L.U.T. to translate a nibble into its correspondent digit to display on shield
 	shield_digits: .BYTE 16
+
+	; A L.U.T. used only by the shield interruption
 	digits_buffer: .BYTE 4
 .CSEG
 start:
+	; Prepare PD0 (USART input pin) for receiving data
 	LDI r16, 0b00000010
 	OUT DDRD, r16
 	OUT PORTD, r16
-	LDI r16, 0b00000000
-	OUT DDRC, r16
-	LDI r16, 0b11111111
-	OUT PORTC, r16
-	LDI r16, 0b11111111
-	OUT DDRB, r16
-	OUT PORTB, r16
 
+	; Set shield digits
 	SETZ shield_digits
 	STZ 0b00000011 ; 0
 	STZ 0b10011111 ; 1
@@ -46,12 +50,14 @@ start:
 	STZ 0b01100001 ; E
 	STZ 0b01110001 ; F
 
+	; Initialize shield with all leds turned off
 	SETZ shield_buffer
 	STZ -1
 	STZ -1
 	STZ -1
 	STZ -1
 
+	; Set digits buffer
 	SETZ digits_buffer
 	STZ 0b10001000
 	STZ 0b01000100
@@ -67,14 +73,17 @@ start:
 	STZ 0
 
 
+	; Timer 0 handles the operation of reading the shield buffer and displaying the contents on the shield
 	TIMER0SETUP 50
 	SHIELDSETUP
 
+	; Set up the USART mechanism
 	LDI r16, 0b01000000
 	STS UCSR0A, r16
 
-	LDI r16, 0b00000000
-	STS UCSR0B, r16
+	; Reboot the receiver, just in case
+		LDI r16, 0b00000000
+		STS UCSR0B, r16
 	LDI r16, 0b10010000
 	STS UCSR0B, r16
 
@@ -256,7 +265,6 @@ tmr0_end:
 	RETI
 
 // display_shield(): void
-; The first thing to call in receiver timer
 .DSEG
 	display_shield_digit: .BYTE 1
 .CSEG

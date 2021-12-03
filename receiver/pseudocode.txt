@@ -1,33 +1,40 @@
 #define BUFFER_SIZE 512
-static byte[] data_buffer = new byte[BUFFER_SIZE + 2];
+static byte[] data_buffer = new byte[BUFFER_SIZE];
+static byte[] hamming_buffer = new byte[BUFFER_SIZE * 2];
 static ushort counter = 0;
-static byte hamming_buffer = -1;
 void on_read_usart()
 {
 	if(counter == -1) return;
-	byte number = read_byte();
-	number &= 0b11111110;
-	if(hamming_buffer & 0b00000001)
-	{
-		hamming_buffer = number;
-		return;
-	}
-	byte result = hamming_to_byte(hamming_buffer, number);
-	data_buffer[counter] = result;
+	byte data = read_byte() & 0b11111110;
+	hamming_buffer[counter] = data;
 	counter++;
-	if(counter >= BUFFER_SIZE)
+	if(counter < BUFFER_SIZE * 2) return;
+	process_received_data();
+	counter = -1;
+}
+
+void process_received_data()
+{
+	ushort c = 0;
+	byte local_hamming_buffer = -1;
+	
+	while(c < BUFFER_SIZE)
 	{
-		ushort receiver_checksum = get_checksum();
-		if(receiver_checksum != data_buffer[BUFFER_SIZE : BUFFER_SIZE + 2])
+		if(local_hamming_buffer == -1)
 		{
-			display_err();
+			byte data = hamming_buffer[c * 2];
+			local_hamming_buffer = data;
 		}
 		else
 		{
-			display_on_shield(receiver_checksum);
+			byte data = hamming_buffer[c * 2 + 1];
+			data_buffer[c] = hamming_to_byte(local_hamming_buffer, data);
+			local_hamming_buffer = -1;
+			c++;
 		}
-		counter = -1;
 	}
+
+	display_checksum();
 }
 
 ushort get_checksum()

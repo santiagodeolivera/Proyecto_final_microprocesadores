@@ -85,3 +85,14 @@
 	ADD @0, @2
 	ADDW1 @0, @1, @3
 .ENDMACRO
+
+; Adds the content of a byte register into a 3-byte register
+; ADD3B1 <register_result_2> <register_result_1> <register_result_0> <register>
+.MACRO ADD3B1
+	ADD @2, @3
+	BRCC add3b1_end
+		INC @1
+	BRNE add3b1_end
+		INC @0
+	add3b1_end:
+.ENDMACRO

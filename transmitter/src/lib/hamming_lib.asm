@@ -229,9 +229,15 @@
 ; Converts a byte into a pair of hamming bytes
 ; BYTETOHAMMING <input> <output_high> <output_low> <reg1>
 .MACRO BYTETOHAMMING
+	PUSH @0
+	PUSH @3
+
 	BYTETONIBBLE @0, @2, @3
 	NIBBLETOHAMMING @2, @1, @0, @3
 	NIBBLETOHAMMING @3, @2, @1, @0
+
+	POP @3
+	POP @0
 .ENDMACRO
 
 ; Converts a pair of hamming bytes into a byte, correcting them in the process

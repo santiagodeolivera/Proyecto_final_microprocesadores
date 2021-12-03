@@ -7,11 +7,14 @@
 
 .INCLUDE "lib.asm"
 
-#define BUFFER_SIZE 1
+#define BUFFER_SIZE 512
 
 .DSEG
 	; Stores the pseudorandom bytes
-	data_buffer: .BYTE BUFFER_SIZE + 2
+	data_buffer: .BYTE BUFFER_SIZE + 3
+
+	; Stores the hamming bytes before turning them into bytes
+	hamming_buffer: .BYTE (BUFFER_SIZE + 3) * 2
 
 	; This memory space acts as an intermediate between the shield and other parts of the program which modify what the shield displays
 	shield_buffer: .BYTE 4
@@ -63,10 +66,6 @@ start:
 	STZ 0b01000100
 	STZ 0b00100010
 	STZ 0b00010001
-
-	SETZ usartR_hamming_buffer
-	STZ -1
-	STZ -1
 	
 	SETZ usartR_counter
 	STZ 0
@@ -99,7 +98,6 @@ program:
 // USART read complete interruption
 .DSEG
 	usartR_counter: .BYTE 2
-	usartR_hamming_buffer: .BYTE 1
 .CSEG
 usartR_start:
 	PUSH r0
@@ -112,88 +110,38 @@ usartR_start:
 	PUSH r20
 	PUSH r21
 
+	// If the counter's high byte is 0xFF, return
 	LDS r17, usartR_counter + 0
 	CPI r17, 0xFF
 	BRNE usartR_continue
 		JMP usartR_end
-
 	usartR_continue:
+
+	// Read byte from USART and clear bit 0
 	LDS r17, UDR0
 	ANDI r17, 0b11111110
 
-	LDS r18, usartR_hamming_buffer
-	ORI r18, 0b11111110
-	CPI r18, 0xFF
-	BRNE usartR_store_byte
-		STS usartR_hamming_buffer, r17
-		RJMP usartR_end
+	// Store byte in hamming_buffer
+	LDS r18, usartR_counter + 0
+	LDS r19, usartR_counter + 1
+	SETZ hamming_buffer
+	SUMZW r18, r19
+	ST Z, r17
 
-	usartR_store_byte:
-		LDS r18, usartR_hamming_buffer
-		HAMMINGTOBYTE r18, r17, r19, r20, r21
+	// Increase counter
+	INCW r18, r19
+	STS usartR_counter + 0, r18
+	STS usartR_counter + 1, r19
 
-		SETZ usartR_hamming_buffer
-		STZ -1
+	// If counter < BUFFER_SIZE * 2, return
+	CPWI r18, r19, (BUFFER_SIZE + 3) * 2
+	BRLO usartR_end
 
-		LDS r20, usartR_counter + 0
-		LDS r21, usartR_counter + 1
-		SETZ data_buffer
-		SUMZW r20, r21
-		ST Z, r19
-
-		INCW r20, r21
-		STS usartR_counter + 0, r20
-		STS usartR_counter + 1, r21
-
-		CPWI r20, r21, BUFFER_SIZE + 2
-		BRLO usartR_end
-
-			PUSH r20
-			PUSH r21
-			PUSH r22
-			PUSH r23
-
-			PUSH r16
-			PUSH r17
-			CALL get_checksum
-			MOV r22, r16
-			MOV r23, r17
-			POP r17
-			POP r16
-
-			LDS r20, data_buffer + BUFFER_SIZE + 0
-			LDS r21, data_buffer + BUFFER_SIZE + 1
-
-			CPW r20, r21, r22, r23
-			BREQ usartR_display_checksum
-			CALL display_err
-			RJMP usartR_display_end
-
-			usartR_display_checksum:
-				PUSH r16
-				PUSH r17
-				MOV r16, r20
-				MOV r17, r21
-				CALL store_on_shield_buffer
-				POP r17
-				POP r16
-
-			usartR_display_end:
-
-			POP r23
-			POP r22
-			POP r21
-			POP r20
-			
-			LDI r20, -1
-			LDI r21, -1
-			STS usartR_counter + 0, r20
-			STS usartR_counter + 1, r21
-			
-			; Deactivate USART Receiver and Receive Complete Interrupt
-			LDI r16, 0
-			STS UCSR0B, r16
-
+	// Transform hamming bytes into normal bytes and display checksum
+	CALL process_received_data
+	LDI r18, -1
+	STS usartR_counter + 0, r18
+	STS usartR_counter + 1, r18
 	
 usartR_end:
 	POP r21
@@ -207,8 +155,10 @@ usartR_end:
 	POP r0
 	RETI
 
-// ushort get_checksum();
-get_checksum:
+// void process_received_data();
+process_received_data:
+	PUSH r16
+	PUSH r17
 	PUSH r18
 	PUSH r19
 	PUSH r20
@@ -216,15 +166,124 @@ get_checksum:
 
 	CLR r17
 	CLR r18
+
+	LDI r19, -1
+
+	processreceiveddata_loop1_start:
+	CPI r19, -1
+	BRNE processreceiveddata_loop1_store_byte
+		SETZ hamming_buffer
+		SUMZW r17, r18
+		SUMZW r17, r18
+		LD r19, Z
+		RJMP processreceiveddata_loop1_guard
+
+	processreceiveddata_loop1_store_byte:
+		SETZ hamming_buffer
+		SUMZW r17, r18
+		SUMZW r17, r18
+		INCW ZH, ZL
+		LD r20, Z
+
+		HAMMINGTOBYTE r19, r20, r21, r22, r23
+		SETZ data_buffer
+		SUMZW r17, r18
+		ST Z, r21
+
+		LDI r19, -1
+		INCW r17, r18
+
+	processreceiveddata_loop1_guard:
+		CPWI r17, r18, BUFFER_SIZE + 3
+		BRSH processreceiveddata_loop1_end
+		JMP processreceiveddata_loop1_start
+	processreceiveddata_loop1_end:
+
+		PUSH r20
+		PUSH r21
+		PUSH r22
+		PUSH r23
+		PUSH r24
+		PUSH r25
+
+		PUSH r16
+		PUSH r17
+		PUSH r18
+		CALL get_checksum
+		MOV r23, r16
+		MOV r24, r17
+		MOV r25, r18
+
+		POP r18
+		POP r17
+		POP r16
+
+		LDS r20, data_buffer + BUFFER_SIZE + 0
+		LDS r21, data_buffer + BUFFER_SIZE + 1
+		LDS r22, data_buffer + BUFFER_SIZE + 2
+
+		CP r20, r23
+		BRNE usartR_display_err
+		CP r21, r24
+		BRNE usartR_display_err
+		CP r22, r25
+		BRNE usartR_display_err
+			PUSH r16
+			PUSH r17
+			MOV r16, r21
+			MOV r17, r22
+			CALL store_on_shield_buffer
+			POP r17
+			POP r16
+			RJMP usartR_display_end
+
+		usartR_display_err:
+		CALL display_err
+
+		usartR_display_end:
+		
+		POP r25
+		POP r24
+		POP r23
+		POP r22
+		POP r21
+		POP r20
+
+		; Deactivate USART Receiver and Receive Complete Interrupt
+		LDI r16, 0
+		STS UCSR0B, r16
+
+	POP r21
+	POP r20
+	POP r19
+	POP r18
+	POP r17
+	POP r16
+	RET
+
+// ushort get_checksum();
+get_checksum:
+	PUSH r19
+	PUSH r20
+	PUSH r21
+	PUSH r22
+
+	; Initialize counter
+	CLR r17
+	CLR r18
+
+	; Initialize checksum
 	CLR r19
 	CLR r20
+	CLR r21
 
 	getchecksum_start:
 	SETZ data_buffer
 	SUMZW r17, r18
-	LD r21, Z
+	LD r22, Z
 
-	ADDW1 r19, r20, r21
+	ADD3B1 r19, r20, r21, r22
+		
 	INCW r17, r18
 
 	CPWI r17, r18, BUFFER_SIZE
@@ -232,11 +291,12 @@ get_checksum:
 
 	MOV r16, r19
 	MOV r17, r20
+	MOV r18, r21
 
+	POP r22
 	POP r21
 	POP r20
 	POP r19
-	POP r18
 	RET
 
 display_err:

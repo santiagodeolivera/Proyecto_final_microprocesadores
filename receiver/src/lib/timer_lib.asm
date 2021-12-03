@@ -1,3 +1,4 @@
+; Set up the timer 0 for match A comparison with a literal byte limit
 ; TIMER0SETUP <timer_limit>
 .MACRO TIMER0SETUP
 	LDI r16, 0b00000010   ; Timer mode
@@ -10,6 +11,7 @@
 	STS TIMSK0, r16		
 .ENDMACRO
 
+; Set up the timer 1 for match A comparison with a literal word limit
 ; TIMER1SETUP <timer_limit>
 .MACRO TIMER1SETUP
 	PUSH r16

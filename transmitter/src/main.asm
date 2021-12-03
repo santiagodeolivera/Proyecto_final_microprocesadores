@@ -9,27 +9,38 @@
 
 .INCLUDE "lib.asm"
 
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 1
 
 .DSEG
-	data_buffer: .BYTE BUFFER_SIZE
+	; Stores the pseudorandom bytes
+	data_buffer: .BYTE BUFFER_SIZE + 2
 
+	; This memory space acts as an intermediate between the shield and other parts of the program which modify what the shield displays
 	shield_buffer: .BYTE 4
+
+	; A L.U.T. to translate a nibble into its correspondent digit to display on shield
 	shield_digits: .BYTE 16
+
+	; A L.U.T. used only by the shield interruption
 	digits_buffer: .BYTE 4
 .CSEG
 start:
+	; Disable the transmitter, just in case
+	LDI r16, 0b00000000
+	STS UCSR0B, r16
+
+	; Prepare PD1 (USART output pin) for sending data
 	LDI r16, 0b00000010
 	OUT DDRD, r16
 	OUT PORTD, r16
+	
+	; Prepare PC1 for input interruption
 	LDI r16, 0b00000000
 	OUT DDRC, r16
 	LDI r16, 0b11111111
 	OUT PORTC, r16
-	LDI r16, 0b11111111
-	OUT DDRB, r16
-	OUT PORTB, r16
-
+	
+	; Set shield digits
 	SETZ shield_digits
 	STZ 0b00000011 ; 0
 	STZ 0b10011111 ; 1
@@ -48,12 +59,14 @@ start:
 	STZ 0b01100001 ; E
 	STZ 0b01110001 ; F
 
+	; Initialize shield with all leds turned off
 	SETZ shield_buffer
 	STZ -1
 	STZ -1
 	STZ -1
 	STZ -1
 
+	; Set digits buffer
 	SETZ digits_buffer
 	STZ 0b10001000
 	STZ 0b01000100
@@ -77,9 +90,12 @@ start:
 	SETZ pseudorand_mem
 	STZ -1
 
+	; Timer 0 handles the operation of reading the shield buffer and displaying the contents on the shield
 	TIMER0SETUP 50
-	TIMER1SETUP 20
 	SHIELDSETUP
+
+	; Timer 1 handles the main program
+	TIMER1SETUP 50
 
 	LDI r16, 0b01000000
 	STS UCSR0A, r16
@@ -92,6 +108,7 @@ start:
 	LDI r16, 0b11111111
 	STS UBRR0L, r16
 
+	; The button interrupt determines when to start the program
 	LDI r16, 0b00000010
 	STS PCMSK1, r16
 	STS PCICR, r16
@@ -175,7 +192,7 @@ tmr1_end:
 	POP r0
 	RETI
 
-// void send_data();
+// void write_data();
 write_data:
 	PUSH r16
 	PUSH r17
@@ -205,7 +222,10 @@ write_data:
 	STS tmr1_counter + 1, r19
 
 	CPWI r18, r19, BUFFER_SIZE
-	BRNE writedata_end
+	BREQ writedata_continue
+		JMP writedata_end
+
+	writedata_continue:
 	
 		PUSH r22
 		PUSH r23
@@ -223,15 +243,18 @@ write_data:
 		LOADBYTEFROMSLICE r24, shield_digits, r23
 		STS shield_buffer + 3, r24
 
+		STS data_buffer + BUFFER_SIZE + 0, r20
+		STS data_buffer + BUFFER_SIZE + 1, r21
+
 		POP r24
 		POP r23
 		POP r22
 
-	LDI r21, 1
-	STS tmr1_state, r21
+		LDI r21, 1
+		STS tmr1_state, r21
 
-	LDI r21, 0
-	STS tmr1_counter + 0, r21
+		LDI r21, 0
+		STS tmr1_counter + 0, r21
 	STS tmr1_counter + 1, r21
 
 writedata_end:
@@ -254,7 +277,7 @@ send_data:
 	LDS r17, tmr1_counter + 0
 	LDS r18, tmr1_counter + 1
 
-	CPWI r17, r18, BUFFER_SIZE
+	CPWI r17, r18, BUFFER_SIZE + 2
 	BRSH senddata_end0
 	RJMP senddata_continue0
 
@@ -280,7 +303,7 @@ send_data:
 		STS tmr1_counter + 0, r17
 		STS tmr1_counter + 1, r18
 
-		CPWI r17, r18, BUFFER_SIZE
+		CPWI r17, r18, BUFFER_SIZE + 2
 		BRLO senddata_end0
 
 			LDS r16, PCMSK1
@@ -331,8 +354,7 @@ tmr0_end:
 	POP r0
 	RETI
 
-// display_shield(): void
-; The first thing to call in receiver timer
+// void display_shield();
 .DSEG
 	display_shield_digit: .BYTE 1
 .CSEG

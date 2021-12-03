@@ -37,7 +37,7 @@ void process_received_data()
 	display_checksum();
 }
 
-void display_checksum()
+ushort get_checksum()
 {
 	ushort c = 0;
 	ushort checksum = 0;
@@ -46,7 +46,8 @@ void display_checksum()
 		checksum += data_buffer[c];
 		c++;
 	}
-	display_on_shield(checksum);
+	return checksum;
 }
 
-void display_on_shield(short n);
+void display_err();
+void store_on_shield_buffer(ushort n);

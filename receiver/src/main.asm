@@ -27,9 +27,8 @@
 .CSEG
 start:
 	; Prepare PD0 (USART input pin) for receiving data
-	LDI r16, 0b00000010
+	LDI r16, 0b00000000
 	OUT DDRD, r16
-	OUT PORTD, r16
 
 	; Set shield digits
 	SETZ shield_digits
@@ -77,7 +76,7 @@ start:
 	TIMER0SETUP 50
 	SHIELDSETUP
 
-	; Set up the USART mechanism
+	; Set up the USART mechanism, the USART RX Complete Interrupt handles the main program
 	LDI r16, 0b01000000
 	STS UCSR0A, r16
 
@@ -156,6 +155,8 @@ usartR_start:
 			LDI r21, -1
 			STS usartR_counter + 0, r20
 			STS usartR_counter + 1, r21
+			
+			; Deactivate USART Receiver and Receive Complete Interrupt
 			LDI r16, 0
 			STS UCSR0B, r16
 
@@ -199,7 +200,7 @@ display_checksum:
 
 	MOV r16, r19
 	MOV r17, r20
-	CALL store_on_shield
+	CALL store_on_shield_buffer
 
 	POP r21
 	POP r20
@@ -209,8 +210,8 @@ display_checksum:
 	POP r16
 	RET
 
-// void store_on_shield(short n);
-store_on_shield:
+// void store_on_shield_buffer(short n);
+store_on_shield_buffer:
 	PUSH r16
 	PUSH r17
 	PUSH r18
@@ -264,7 +265,7 @@ tmr0_end:
 	POP r0
 	RETI
 
-// display_shield(): void
+// void display_shield();
 .DSEG
 	display_shield_digit: .BYTE 1
 .CSEG

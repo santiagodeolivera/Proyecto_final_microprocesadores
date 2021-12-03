@@ -51,7 +51,7 @@
 		INC @0
 .ENDMACRO
 
-; Performs a comparison between a word and an inmediate
+; Performs a comparison between a word register and a word literal
 ; May only work with unsigned comparisions, though
 ; CPWI <high_register> <low_register> <literal>
 .MACRO CPWI
@@ -59,6 +59,16 @@
 	BRNE cpwi_end
 		CPI @1, low(@2)
 	cpwi_end:
+.ENDMACRO
+
+; Performs a comparison between two word registers
+; May only work with unsigned comparisions, though
+; CPWI <register_1_high> <register_1_low> <register_2_high> <register_2_low>
+.MACRO CPW
+	CP @0, @2
+	BRNE cpw_end
+		CP @1, @3
+	cpw_end:
 .ENDMACRO
 
 ; Adds the content of a register into a word register

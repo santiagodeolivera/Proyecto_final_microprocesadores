@@ -7,14 +7,11 @@
 
 .INCLUDE "lib.asm"
 
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 1
 
 .DSEG
 	; Stores the pseudorandom bytes
-	data_buffer: .BYTE BUFFER_SIZE
-
-	; Stores the hamming bytes before processing them
-	hamming_buffer: .BYTE BUFFER_SIZE * 2
+	data_buffer: .BYTE BUFFER_SIZE + 2
 
 	; This memory space acts as an intermediate between the shield and other parts of the program which modify what the shield displays
 	shield_buffer: .BYTE 4
@@ -147,10 +144,46 @@ usartR_start:
 		STS usartR_counter + 0, r20
 		STS usartR_counter + 1, r21
 
-		CPWI r20, r21, BUFFER_SIZE
+		CPWI r20, r21, BUFFER_SIZE + 2
 		BRLO usartR_end
 
-			CALL display_checksum
+			PUSH r20
+			PUSH r21
+			PUSH r22
+			PUSH r23
+
+			PUSH r16
+			PUSH r17
+			CALL get_checksum
+			MOV r22, r16
+			MOV r23, r17
+			POP r17
+			POP r16
+
+			LDS r20, data_buffer + BUFFER_SIZE + 0
+			LDS r21, data_buffer + BUFFER_SIZE + 1
+
+			CPW r20, r21, r22, r23
+			BREQ usartR_display_checksum
+			CALL display_err
+			RJMP usartR_display_end
+
+			usartR_display_checksum:
+				PUSH r16
+				PUSH r17
+				MOV r16, r20
+				MOV r17, r21
+				CALL store_on_shield_buffer
+				POP r17
+				POP r16
+
+			usartR_display_end:
+
+			POP r23
+			POP r22
+			POP r21
+			POP r20
+			
 			LDI r20, -1
 			LDI r21, -1
 			STS usartR_counter + 0, r20
@@ -173,10 +206,8 @@ usartR_end:
 	POP r0
 	RETI
 
-// void display_checksum();
-display_checksum:
-	PUSH r16
-	PUSH r17
+// ushort get_checksum();
+get_checksum:
 	PUSH r18
 	PUSH r19
 	PUSH r20
@@ -187,7 +218,7 @@ display_checksum:
 	CLR r19
 	CLR r20
 
-	displaychecksum_start:
+	getchecksum_start:
 	SETZ data_buffer
 	SUMZW r17, r18
 	LD r21, Z
@@ -196,17 +227,26 @@ display_checksum:
 	INCW r17, r18
 
 	CPWI r17, r18, BUFFER_SIZE
-	BRLO displaychecksum_start
+	BRLO getchecksum_start
 
 	MOV r16, r19
 	MOV r17, r20
-	CALL store_on_shield_buffer
 
 	POP r21
 	POP r20
 	POP r19
 	POP r18
-	POP r17
+	RET
+
+display_err:
+	PUSH r16
+
+	SETZ shield_buffer
+	STZ 0b01100001
+	STZ 0b11110101
+	STZ 0b11110101
+	STZ 0b11111111
+
 	POP r16
 	RET
 

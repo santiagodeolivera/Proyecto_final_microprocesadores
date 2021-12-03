@@ -1,5 +1,5 @@
-#define BUFFER_SIZE 2
-static byte[] data_buffer = new byte[BUFFER_SIZE];
+#define BUFFER_SIZE 512
+static byte[] data_buffer = new byte[BUFFER_SIZE + 2];
 static ushort counter = 0;
 static byte hamming_buffer = -1;
 void on_read_usart()
@@ -17,12 +17,20 @@ void on_read_usart()
 	counter++;
 	if(counter >= BUFFER_SIZE)
 	{
-		display_checksum();
+		ushort receiver_checksum = get_checksum();
+		if(receiver_checksum != data_buffer[BUFFER_SIZE : BUFFER_SIZE + 2])
+		{
+			display_err();
+		}
+		else
+		{
+			display_on_shield(receiver_checksum);
+		}
 		counter = -1;
 	}
 }
 
-void display_checksum()
+ushort get_checksum()
 {
 	ushort c = 0;
 	ushort checksum = 0;
@@ -31,7 +39,8 @@ void display_checksum()
 		checksum += data_buffer[c];
 		c++;
 	}
-	display_on_shield(checksum);
+	return checksum;
 }
 
-void display_on_shield(short n);
+void display_err();
+void store_on_shield_buffer(ushort n);

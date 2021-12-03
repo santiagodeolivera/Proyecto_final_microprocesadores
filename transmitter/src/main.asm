@@ -25,6 +25,10 @@
 	digits_buffer: .BYTE 4
 .CSEG
 start:
+	; Disable the transmitter, just in case
+	LDI r16, 0b00000000
+	STS UCSR0B, r16
+
 	; Prepare PD1 (USART output pin) for sending data
 	LDI r16, 0b00000010
 	OUT DDRD, r16
@@ -91,7 +95,7 @@ start:
 	SHIELDSETUP
 
 	; Timer 1 handles the main program
-	TIMER1SETUP 20
+	TIMER1SETUP 50
 
 	LDI r16, 0b01000000
 	STS UCSR0A, r16

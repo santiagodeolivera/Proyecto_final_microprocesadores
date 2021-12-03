@@ -26,6 +26,10 @@
 	digits_buffer: .BYTE 4
 .CSEG
 start:
+	; Reboot the receiver, just in case
+	LDI r16, 0b00000000
+	STS UCSR0B, r16
+
 	; Prepare PD0 (USART input pin) for receiving data
 	LDI r16, 0b00000000
 	OUT DDRD, r16
@@ -80,9 +84,6 @@ start:
 	LDI r16, 0b01000000
 	STS UCSR0A, r16
 
-	; Reboot the receiver, just in case
-		LDI r16, 0b00000000
-		STS UCSR0B, r16
 	LDI r16, 0b10010000
 	STS UCSR0B, r16
 

@@ -28,31 +28,35 @@
   <FILE>TestAssembler.lss</FILE>
  </OUTPUT_FILES>
  <LABELS>
-  <start><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>19</LINE></start>
-  <tmr0_start><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>243</LINE></tmr0_start>
-  <usartR_start><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>98</LINE></usartR_start>
+  <start><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>20</LINE></start>
+  <tmr0_start><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>278</LINE></tmr0_start>
+  <usartR_start><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>91</LINE></usartR_start>
   <write_shield><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\lib/shield_lib.asm</FILE><LINE>24</LINE></write_shield>
   <write_bytes_into_PB0><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\lib/shield_lib.asm</FILE><LINE>32</LINE></write_bytes_into_PB0>
   <PB0_loop><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\lib/shield_lib.asm</FILE><LINE>34</LINE></PB0_loop>
   <PB0_set><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\lib/shield_lib.asm</FILE><LINE>40</LINE></PB0_set>
   <PB0_set_end><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\lib/shield_lib.asm</FILE><LINE>42</LINE></PB0_set_end>
   <data_buffer><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>13</LINE></data_buffer>
-  <shield_buffer><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>15</LINE></shield_buffer>
-  <shield_digits><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>16</LINE></shield_digits>
-  <digits_buffer><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>17</LINE></digits_buffer>
-  <usartR_hamming_buffer><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>96</LINE></usartR_hamming_buffer>
-  <usartR_counter><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>95</LINE></usartR_counter>
-  <program><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>89</LINE></program>
-  <usartR_continue><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>114</LINE></usartR_continue>
-  <usartR_end><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>154</LINE></usartR_end>
-  <usartR_store_byte><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>125</LINE></usartR_store_byte>
-  <display_checksum><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>167</LINE></display_checksum>
-  <displaychecksum_start><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>180</LINE></displaychecksum_start>
-  <store_on_shield><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>204</LINE></store_on_shield>
-  <display_shield><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>263</LINE></display_shield>
-  <tmr0_end><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>251</LINE></tmr0_end>
-  <display_shield_digit><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>261</LINE></display_shield_digit>
-  <display_shield_reset><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>298</LINE></display_shield_reset>
-  <display_shield_end><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>287</LINE></display_shield_end>
+  <hamming_buffer><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>14</LINE></hamming_buffer>
+  <shield_buffer><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>16</LINE></shield_buffer>
+  <shield_digits><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>17</LINE></shield_digits>
+  <digits_buffer><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>18</LINE></digits_buffer>
+  <usartR_counter><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>89</LINE></usartR_counter>
+  <program><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>83</LINE></program>
+  <usartR_continue><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>107</LINE></usartR_continue>
+  <usartR_end><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>135</LINE></usartR_end>
+  <process_received_data><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>148</LINE></process_received_data>
+  <processreceiveddata_loop1_start><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>161</LINE></processreceiveddata_loop1_start>
+  <processreceiveddata_loop1_store_byte><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>170</LINE></processreceiveddata_loop1_store_byte>
+  <processreceiveddata_loop1_guard><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>185</LINE></processreceiveddata_loop1_guard>
+  <processreceiveddata_loop1_end><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>189</LINE></processreceiveddata_loop1_end>
+  <display_checksum><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>202</LINE></display_checksum>
+  <displaychecksum_start><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>215</LINE></displaychecksum_start>
+  <store_on_shield><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>239</LINE></store_on_shield>
+  <display_shield><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>298</LINE></display_shield>
+  <tmr0_end><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>286</LINE></tmr0_end>
+  <display_shield_digit><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>296</LINE></display_shield_digit>
+  <display_shield_reset><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>333</LINE></display_shield_reset>
+  <display_shield_end><FILE>C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm</FILE><LINE>322</LINE></display_shield_end>
  </LABELS>
 </ASSEMBLER_INFO>

@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.2.8  C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm Thu Dec 02 15:41:15 2021
+AVRASM ver. 2.2.8  C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm Fri Dec 03 09:54:59 2021
 
 [builtin](2): Including file 'C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.6.364\avrasm\inc\m328Pdef.inc'
 C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm(8): Including file 'C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\lib.asm'
@@ -999,9 +999,9 @@ C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src
                                  
 000000 940c 0039                 	JMP start
                                  .ORG 0x001C
-00001c 940c 0216                 	JMP tmr0_start
+00001c 940c 023a                 	JMP tmr0_start
                                  .ORG 0x0024
-000024 940c 00b0                 	JMP usartR_start
+000024 940c 00a7                 	JMP usartR_start
                                  
                                  .INCLUDE "lib.asm"
                                  
@@ -1396,10 +1396,11 @@ C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src
                                  
                                  .DSEG
 000100                           	data_buffer: .BYTE BUFFER_SIZE
+000300                           	hamming_buffer: .BYTE BUFFER_SIZE * 2
                                  
-000300                           	shield_buffer: .BYTE 4
-000304                           	shield_digits: .BYTE 16
-000314                           	digits_buffer: .BYTE 4
+000700                           	shield_buffer: .BYTE 4
+000704                           	shield_digits: .BYTE 16
+000714                           	digits_buffer: .BYTE 4
                                  .CSEG
                                  start:
 000039 e002                      	LDI r16, 0b00000010
@@ -1409,568 +1410,621 @@ C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src
 00003d b907                      	OUT DDRC, r16
 00003e ef0f                      	LDI r16, 0b11111111
 00003f b908                      	OUT PORTC, r16
-000040 ef0f                      	LDI r16, 0b11111111
-000041 b904                      	OUT DDRB, r16
-000042 b905                      	OUT PORTB, r16
                                  
-000043 e0f3
-000044 e0e4                      	SETZ shield_digits
-000045 e003
-000046 9301                      	STZ 0b00000011 ; 0
-000047 e90f
-000048 9301                      	STZ 0b10011111 ; 1
-000049 e205
-00004a 9301                      	STZ 0b00100101 ; 2
-00004b e00d
-00004c 9301                      	STZ 0b00001101 ; 3
-00004d e909
-00004e 9301                      	STZ 0b10011001 ; 4
-00004f e409
-000050 9301                      	STZ 0b01001001 ; 5
-000051 e401
-000052 9301                      	STZ 0b01000001 ; 6
-000053 e10f
-000054 9301                      	STZ 0b00011111 ; 7
-000055 e001
-000056 9301                      	STZ 0b00000001 ; 8
-000057 e009
-000058 9301                      	STZ 0b00001001 ; 9
-000059 e101
-00005a 9301                      	STZ 0b00010001 ; A
-00005b ec01
-00005c 9301                      	STZ 0b11000001 ; B
-00005d e603
-00005e 9301                      	STZ 0b01100011 ; C
-00005f e805
-000060 9301                      	STZ 0b10000101 ; D
-000061 e601
-000062 9301                      	STZ 0b01100001 ; E
-000063 e701
-000064 9301                      	STZ 0b01110001 ; F
+000040 e0f7
+000041 e0e4                      	SETZ shield_digits
+000042 e003
+000043 9301                      	STZ 0b00000011 ; 0
+000044 e90f
+000045 9301                      	STZ 0b10011111 ; 1
+000046 e205
+000047 9301                      	STZ 0b00100101 ; 2
+000048 e00d
+000049 9301                      	STZ 0b00001101 ; 3
+00004a e909
+00004b 9301                      	STZ 0b10011001 ; 4
+00004c e409
+00004d 9301                      	STZ 0b01001001 ; 5
+00004e e401
+00004f 9301                      	STZ 0b01000001 ; 6
+000050 e10f
+000051 9301                      	STZ 0b00011111 ; 7
+000052 e001
+000053 9301                      	STZ 0b00000001 ; 8
+000054 e009
+000055 9301                      	STZ 0b00001001 ; 9
+000056 e101
+000057 9301                      	STZ 0b00010001 ; A
+000058 ec01
+000059 9301                      	STZ 0b11000001 ; B
+00005a e603
+00005b 9301                      	STZ 0b01100011 ; C
+00005c e805
+00005d 9301                      	STZ 0b10000101 ; D
+00005e e601
+00005f 9301                      	STZ 0b01100001 ; E
+000060 e701
+000061 9301                      	STZ 0b01110001 ; F
                                  
-000065 e0f3
-000066 e0e0                      	SETZ shield_buffer
-000067 ef0f
-000068 9301                      	STZ -1
-000069 ef0f
-00006a 9301                      	STZ -1
-00006b ef0f
-00006c 9301                      	STZ -1
-00006d ef0f
-00006e 9301                      	STZ -1
+000062 e0f7
+000063 e0e0                      	SETZ shield_buffer
+000064 ef0f
+000065 9301                      	STZ -1
+000066 ef0f
+000067 9301                      	STZ -1
+000068 ef0f
+000069 9301                      	STZ -1
+00006a ef0f
+00006b 9301                      	STZ -1
                                  
-00006f e0f3
-000070 e1e4                      	SETZ digits_buffer
-000071 e808
-000072 9301                      	STZ 0b10001000
-000073 e404
-000074 9301                      	STZ 0b01000100
-000075 e202
-000076 9301                      	STZ 0b00100010
-000077 e101
-000078 9301                      	STZ 0b00010001
-                                 
-000079 e0f3
-00007a e1ea                      	SETZ usartR_hamming_buffer
-00007b ef0f
-00007c 9301                      	STZ -1
-00007d ef0f
-00007e 9301                      	STZ -1
+00006c e0f7
+00006d e1e4                      	SETZ digits_buffer
+00006e e808
+00006f 9301                      	STZ 0b10001000
+000070 e404
+000071 9301                      	STZ 0b01000100
+000072 e202
+000073 9301                      	STZ 0b00100010
+000074 e101
+000075 9301                      	STZ 0b00010001
                                  	
-00007f e0f3
-000080 e1e8                      	SETZ usartR_counter
-000081 e000
-000082 9301                      	STZ 0
-000083 e000
-000084 9301                      	STZ 0
+000076 e0f7
+000077 e1e8                      	SETZ usartR_counter
+000078 e000
+000079 9301                      	STZ 0
+00007a e000
+00007b 9301                      	STZ 0
                                  
                                  
-000085 e002
-000086 bd04
-000087 e005
-000088 bd05
-000089 e302
-00008a bd07
-00008b e002
-00008c 9300 006e                 	TIMER0SETUP 50
-00008e 930f
-00008f b104
-000090 6001
-000091 b904
-000092 b105
-000093 6001
-000094 b905
-000095 b10a
-000096 6900
-000097 b90a
-000098 b10b
-000099 760f
-00009a b90b
-00009b 910f                      	SHIELDSETUP
+00007c e002
+00007d bd04
+00007e e005
+00007f bd05
+000080 e302
+000081 bd07
+000082 e002
+000083 9300 006e                 	TIMER0SETUP 50
+000085 930f
+000086 b104
+000087 6001
+000088 b904
+000089 b105
+00008a 6001
+00008b b905
+00008c b10a
+00008d 6900
+00008e b90a
+00008f b10b
+000090 760f
+000091 b90b
+000092 910f                      	SHIELDSETUP
                                  
-00009c e400                      	LDI r16, 0b01000000
-00009d 9300 00c0                 	STS UCSR0A, r16
+000093 e400                      	LDI r16, 0b01000000
+000094 9300 00c0                 	STS UCSR0A, r16
                                  
-00009f e000                      	LDI r16, 0b00000000
-0000a0 9300 00c1                 	STS UCSR0B, r16
-0000a2 e900                      	LDI r16, 0b10010000
-0000a3 9300 00c1                 	STS UCSR0B, r16
+000096 e000                      	LDI r16, 0b00000000
+000097 9300 00c1                 	STS UCSR0B, r16
+000099 e900                      	LDI r16, 0b10010000
+00009a 9300 00c1                 	STS UCSR0B, r16
                                  
-0000a5 e00e                      	LDI r16, 0b00001110
-0000a6 9300 00c2                 	STS UCSR0C, r16
-0000a8 e00f                      	LDI r16, 0b00001111
-0000a9 9300 00c5                 	STS UBRR0H, r16
-0000ab ef0f                      	LDI r16, 0b11111111
-0000ac 9300 00c4                 	STS UBRR0L, r16
+00009c e00e                      	LDI r16, 0b00001110
+00009d 9300 00c2                 	STS UCSR0C, r16
+00009f e00f                      	LDI r16, 0b00001111
+0000a0 9300 00c5                 	STS UBRR0H, r16
+0000a2 ef0f                      	LDI r16, 0b11111111
+0000a3 9300 00c4                 	STS UBRR0L, r16
                                  
-0000ae 9478                      sei
+0000a5 9478                      sei
                                  program:
-0000af cfff                      	rJMP program
+0000a6 cfff                      	rJMP program
                                  
                                  
                                  // USART read complete interruption
                                  .DSEG
-000318                           	usartR_counter: .BYTE 2
-00031a                           	usartR_hamming_buffer: .BYTE 1
+000718                           	usartR_counter: .BYTE 2
                                  .CSEG
                                  usartR_start:
-0000b0 920f                      	PUSH r0
-0000b1 b60f                      	IN r0, SREG
-0000b2 920f                      	PUSH r0
-0000b3 930f                      	PUSH r16
-0000b4 931f                      	PUSH r17
-0000b5 932f                      	PUSH r18
-0000b6 933f                      	PUSH r19
-0000b7 934f                      	PUSH r20
-0000b8 935f                      	PUSH r21
+0000a7 920f                      	PUSH r0
+0000a8 b60f                      	IN r0, SREG
+0000a9 920f                      	PUSH r0
+0000aa 930f                      	PUSH r16
+0000ab 931f                      	PUSH r17
+0000ac 932f                      	PUSH r18
+0000ad 933f                      	PUSH r19
+0000ae 934f                      	PUSH r20
+0000af 935f                      	PUSH r21
                                  
-0000b9 9110 0318                 	LDS r17, usartR_counter + 0
-0000bb 3f1f                      	CPI r17, 0xFF
-0000bc f411                      	BRNE usartR_continue
-0000bd 940c 01af                 		JMP usartR_end
-                                 
+                                 	// If the counter's high byte is 0xFF, return
+0000b0 9110 0718                 	LDS r17, usartR_counter + 0
+0000b2 3f1f                      	CPI r17, 0xFF
+0000b3 f411                      	BRNE usartR_continue
+0000b4 940c 00d6                 		JMP usartR_end
                                  	usartR_continue:
-0000bf 9110 00c6                 	LDS r17, UDR0
-0000c1 7f1e                      	ANDI r17, 0b11111110
                                  
-0000c2 9120 031a                 	LDS r18, usartR_hamming_buffer
-0000c4 6f2e                      	ORI r18, 0b11111110
-0000c5 3f2f                      	CPI r18, 0xFF
-0000c6 f419                      	BRNE usartR_store_byte
-0000c7 9310 031a                 		STS usartR_hamming_buffer, r17
-0000c9 c0e5                      		RJMP usartR_end
+                                 	// Read byte from USART and clear bit 0
+0000b6 9110 00c6                 	LDS r17, UDR0
+0000b8 7f1e                      	ANDI r17, 0b11111110
                                  
-                                 	usartR_store_byte:
-0000ca 9120 031a                 		LDS r18, usartR_hamming_buffer
-0000cc 932f
-0000cd 931f
-0000ce 934f
-0000cf 935f
-0000d0 932f
-0000d1 933f
-0000d2 931f
-0000d3 935f
-0000d4 2755
-0000d5 9553
-0000d6 2744
-0000d7 2f32
-0000d8 2711
-0000d9 9536
-0000da 2713
-0000db 9536
-0000dc 9536
-0000dd 2713
-0000de 9536
-0000df 9536
-0000e0 2713
-0000e1 9536
-0000e2 9536
-0000e3 2713
-0000e4 6f1e
-0000e5 3f1f
-0000e6 f409
-0000e7 0f55
-0000e8 2f32
-0000e9 2711
-0000ea 9536
-0000eb 9536
-0000ec 2713
-0000ed 9536
-0000ee 2713
-0000ef 9536
-0000f0 9536
-0000f1 9536
-0000f2 2713
-0000f3 9536
-0000f4 2713
-0000f5 6f1e
-0000f6 3f1f
-0000f7 f411
-0000f8 0f55
-0000f9 0f55
-0000fa 2f32
-0000fb 2711
-0000fc 9536
-0000fd 9536
-0000fe 9536
-0000ff 9536
-000100 2713
-000101 9536
-000102 2713
-000103 9536
-000104 2713
-000105 9536
-000106 2713
-000107 6f1e
-000108 3f1f
-000109 f421
-00010a 0f55
-00010b 0f55
-00010c 0f55
-00010d 0f55
-00010e 2f32
-00010f 2735
-000110 2f53
-000111 6f57
-000112 3f5f
-000113 f409
-000114 6041
-000115 2f53
-000116 6d5f
-000117 3f5f
-000118 f409
-000119 6042
-00011a 2f53
-00011b 6b5f
-00011c 3f5f
-00011d f409
-00011e 6044
-00011f 2f53
-000120 675f
-000121 3f5f
-000122 f409
-000123 6048
-000124 915f
-000125 911f
-000126 913f
-000127 912f
-000128 931f
-000129 933f
-00012a 932f
-00012b 934f
-00012c 2744
-00012d 9543
-00012e 2755
-00012f 2f31
-000130 2722
-000131 9536
-000132 2723
-000133 9536
-000134 9536
-000135 2723
-000136 9536
-000137 9536
-000138 2723
-000139 9536
-00013a 9536
-00013b 2723
-00013c 6f2e
-00013d 3f2f
-00013e f409
-00013f 0f44
-000140 2f31
-000141 2722
-000142 9536
-000143 9536
-000144 2723
-000145 9536
-000146 2723
-000147 9536
-000148 9536
-000149 9536
-00014a 2723
-00014b 9536
-00014c 2723
-00014d 6f2e
-00014e 3f2f
-00014f f411
-000150 0f44
-000151 0f44
-000152 2f31
-000153 2722
-000154 9536
-000155 9536
-000156 9536
-000157 9536
-000158 2723
-000159 9536
-00015a 2723
-00015b 9536
-00015c 2723
-00015d 9536
-00015e 2723
-00015f 6f2e
-000160 3f2f
-000161 f421
-000162 0f44
-000163 0f44
-000164 0f44
-000165 0f44
-000166 2f31
-000167 2734
-000168 2f43
-000169 6f47
-00016a 3f4f
-00016b f409
-00016c 6051
-00016d 2f43
-00016e 6d4f
-00016f 3f4f
-000170 f409
-000171 6052
-000172 2f43
-000173 6b4f
-000174 3f4f
-000175 f409
-000176 6054
-000177 2f43
-000178 674f
-000179 3f4f
-00017a f409
-00017b 6058
-00017c 914f
-00017d 912f
-00017e 913f
-00017f 911f
-000180 2f34
-000181 0f33
-000182 0f33
-000183 0f33
-000184 0f33
-000185 2b35
-000186 915f
-000187 914f
-000188 911f
-000189 912f                      		HAMMINGTOBYTE r18, r17, r19, r20, r21
+                                 	// Store byte in hamming_buffer
+0000b9 9120 0718                 	LDS r18, usartR_counter + 0
+0000bb 9130 0719                 	LDS r19, usartR_counter + 1
+0000bd e0f3
+0000be e0e0                      	SETZ hamming_buffer
+0000bf 0ff2
+0000c0 0fe3
+0000c1 f408
+0000c2 95f3                      	SUMZW r18, r19
+0000c3 8310                      	ST Z, r17
                                  
-00018a e0f3
-00018b e1ea                      		SETZ usartR_hamming_buffer
-00018c ef0f
-00018d 9301                      		STZ -1
+                                 	// Increase counter
+0000c4 9533
+0000c5 f409
+0000c6 9523                      	INCW r18, r19
+0000c7 9320 0718                 	STS usartR_counter + 0, r18
+0000c9 9330 0719                 	STS usartR_counter + 1, r19
                                  
-00018e 9140 0318                 		LDS r20, usartR_counter + 0
-000190 9150 0319                 		LDS r21, usartR_counter + 1
-000192 e0f1
-000193 e0e0                      		SETZ data_buffer
-000194 0ff4
-000195 0fe5
-000196 f408
-000197 95f3                      		SUMZW r20, r21
-000198 8330                      		ST Z, r19
+                                 	// If counter < BUFFER_SIZE * 2, return
+0000cb 3024
+0000cc f409
+0000cd 3030                      	CPWI r18, r19, BUFFER_SIZE * 2
+0000ce f038                      	BRLO usartR_end
                                  
-000199 9553
-00019a f409
-00019b 9543                      		INCW r20, r21
-00019c 9340 0318                 		STS usartR_counter + 0, r20
-00019e 9350 0319                 		STS usartR_counter + 1, r21
-                                 
-0001a0 3042
-0001a1 f409
-0001a2 3050                      		CPWI r20, r21, BUFFER_SIZE
-0001a3 f058                      		BRLO usartR_end
-                                 
-0001a4 940e 01b9                 			CALL display_checksum
-0001a6 ef4f                      			LDI r20, -1
-0001a7 ef5f                      			LDI r21, -1
-0001a8 9340 0318                 			STS usartR_counter + 0, r20
-0001aa 9350 0319                 			STS usartR_counter + 1, r21
-0001ac e000                      			LDI r16, 0
-0001ad 9300 00c1                 			STS UCSR0B, r16
-                                 
+                                 	// Transform hamming bytes into normal bytes and display checksum
+0000cf 940e 00e0                 	CALL process_received_data
+0000d1 ef2f                      	LDI r18, -1
+0000d2 9320 0718                 	STS usartR_counter + 0, r18
+0000d4 9320 0719                 	STS usartR_counter + 1, r18
                                  	
                                  usartR_end:
-0001af 915f                      	POP r21
-0001b0 914f                      	POP r20
-0001b1 913f                      	POP r19
-0001b2 912f                      	POP r18
-0001b3 911f                      	POP r17
-0001b4 910f                      	POP r16
-0001b5 900f                      	POP r0
-0001b6 be0f                      	OUT SREG, r0
-0001b7 900f                      	POP r0
-0001b8 9518                      	RETI
+0000d6 915f                      	POP r21
+0000d7 914f                      	POP r20
+0000d8 913f                      	POP r19
+0000d9 912f                      	POP r18
+0000da 911f                      	POP r17
+0000db 910f                      	POP r16
+0000dc 900f                      	POP r0
+0000dd be0f                      	OUT SREG, r0
+0000de 900f                      	POP r0
+0000df 9518                      	RETI
                                  
-                                 // void display_checksum();
-                                 display_checksum:
-0001b9 930f                      	PUSH r16
-0001ba 931f                      	PUSH r17
-0001bb 932f                      	PUSH r18
-0001bc 933f                      	PUSH r19
-0001bd 934f                      	PUSH r20
-0001be 935f                      	PUSH r21
+                                 // void process_received_data();
+                                 process_received_data:
+0000e0 930f                      	PUSH r16
+0000e1 931f                      	PUSH r17
+0000e2 932f                      	PUSH r18
+0000e3 933f                      	PUSH r19
+0000e4 934f                      	PUSH r20
+0000e5 935f                      	PUSH r21
                                  
-0001bf 2711                      	CLR r17
-0001c0 2722                      	CLR r18
-0001c1 2733                      	CLR r19
-0001c2 2744                      	CLR r20
+0000e6 2711                      	CLR r17
+0000e7 2722                      	CLR r18
                                  
-                                 	displaychecksum_start:
+0000e8 ef3f                      	LDI r19, -1
+                                 
+                                 	processreceiveddata_loop1_start:
+0000e9 3f3f                      	CPI r19, -1
+0000ea f461                      	BRNE processreceiveddata_loop1_store_byte
+0000eb e0f3
+0000ec e0e0                      		SETZ hamming_buffer
+0000ed 0ff1
+0000ee 0fe2
+0000ef f408
+0000f0 95f3                      		SUMZW r17, r18
+0000f1 0ff1
+0000f2 0fe2
+0000f3 f408
+0000f4 95f3                      		SUMZW r17, r18
+0000f5 8130                      		LD r19, Z
+0000f6 c0d7                      		RJMP processreceiveddata_loop1_guard
+                                 
+                                 	processreceiveddata_loop1_store_byte:
+0000f7 e0f3
+0000f8 e0e0                      		SETZ hamming_buffer
+0000f9 0ff1
+0000fa 0fe2
+0000fb f408
+0000fc 95f3                      		SUMZW r17, r18
+0000fd 0ff1
+0000fe 0fe2
+0000ff f408
+000100 95f3                      		SUMZW r17, r18
+000101 95e3
+000102 f409
+000103 95f3                      		INCW ZH, ZL
+000104 8140                      		LD r20, Z
+                                 
+000105 933f
+000106 934f
+000107 936f
+000108 937f
+000109 933f
+00010a 935f
+00010b 934f
+00010c 937f
+00010d 2777
+00010e 9573
+00010f 2766
+000110 2f53
+000111 2744
+000112 9556
+000113 2745
+000114 9556
+000115 9556
+000116 2745
+000117 9556
+000118 9556
+000119 2745
+00011a 9556
+00011b 9556
+00011c 2745
+00011d 6f4e
+00011e 3f4f
+00011f f409
+000120 0f77
+000121 2f53
+000122 2744
+000123 9556
+000124 9556
+000125 2745
+000126 9556
+000127 2745
+000128 9556
+000129 9556
+00012a 9556
+00012b 2745
+00012c 9556
+00012d 2745
+00012e 6f4e
+00012f 3f4f
+000130 f411
+000131 0f77
+000132 0f77
+000133 2f53
+000134 2744
+000135 9556
+000136 9556
+000137 9556
+000138 9556
+000139 2745
+00013a 9556
+00013b 2745
+00013c 9556
+00013d 2745
+00013e 9556
+00013f 2745
+000140 6f4e
+000141 3f4f
+000142 f421
+000143 0f77
+000144 0f77
+000145 0f77
+000146 0f77
+000147 2f53
+000148 2757
+000149 2f75
+00014a 6f77
+00014b 3f7f
+00014c f409
+00014d 6061
+00014e 2f75
+00014f 6d7f
+000150 3f7f
+000151 f409
+000152 6062
+000153 2f75
+000154 6b7f
+000155 3f7f
+000156 f409
+000157 6064
+000158 2f75
+000159 677f
+00015a 3f7f
+00015b f409
+00015c 6068
+00015d 917f
+00015e 914f
+00015f 915f
+000160 913f
+000161 934f
+000162 935f
+000163 933f
+000164 936f
+000165 2766
+000166 9563
+000167 2777
+000168 2f54
+000169 2733
+00016a 9556
+00016b 2735
+00016c 9556
+00016d 9556
+00016e 2735
+00016f 9556
+000170 9556
+000171 2735
+000172 9556
+000173 9556
+000174 2735
+000175 6f3e
+000176 3f3f
+000177 f409
+000178 0f66
+000179 2f54
+00017a 2733
+00017b 9556
+00017c 9556
+00017d 2735
+00017e 9556
+00017f 2735
+000180 9556
+000181 9556
+000182 9556
+000183 2735
+000184 9556
+000185 2735
+000186 6f3e
+000187 3f3f
+000188 f411
+000189 0f66
+00018a 0f66
+00018b 2f54
+00018c 2733
+00018d 9556
+00018e 9556
+00018f 9556
+000190 9556
+000191 2735
+000192 9556
+000193 2735
+000194 9556
+000195 2735
+000196 9556
+000197 2735
+000198 6f3e
+000199 3f3f
+00019a f421
+00019b 0f66
+00019c 0f66
+00019d 0f66
+00019e 0f66
+00019f 2f54
+0001a0 2756
+0001a1 2f65
+0001a2 6f67
+0001a3 3f6f
+0001a4 f409
+0001a5 6071
+0001a6 2f65
+0001a7 6d6f
+0001a8 3f6f
+0001a9 f409
+0001aa 6072
+0001ab 2f65
+0001ac 6b6f
+0001ad 3f6f
+0001ae f409
+0001af 6074
+0001b0 2f65
+0001b1 676f
+0001b2 3f6f
+0001b3 f409
+0001b4 6078
+0001b5 916f
+0001b6 913f
+0001b7 915f
+0001b8 914f
+0001b9 2f56
+0001ba 0f55
+0001bb 0f55
+0001bc 0f55
+0001bd 0f55
+0001be 2b57
+0001bf 917f
+0001c0 916f
+0001c1 914f
+0001c2 913f                      		HAMMINGTOBYTE r19, r20, r21, r22, r23
 0001c3 e0f1
-0001c4 e0e0                      	SETZ data_buffer
+0001c4 e0e0                      		SETZ data_buffer
 0001c5 0ff1
 0001c6 0fe2
 0001c7 f408
-0001c8 95f3                      	SUMZW r17, r18
-0001c9 8150                      	LD r21, Z
+0001c8 95f3                      		SUMZW r17, r18
+0001c9 8350                      		ST Z, r21
                                  
-0001ca 0f45
-0001cb f408
-0001cc 9533                      	ADDW1 r19, r20, r21
-0001cd 9523
-0001ce f409
-0001cf 9513                      	INCW r17, r18
+0001ca ef3f                      		LDI r19, -1
+0001cb 9523
+0001cc f409
+0001cd 9513                      		INCW r17, r18
                                  
-0001d0 3012
-0001d1 f409
-0001d2 3020                      	CPWI r17, r18, BUFFER_SIZE
-0001d3 f378                      	BRLO displaychecksum_start
+                                 	processreceiveddata_loop1_guard:
+0001ce 3012
+0001cf f409
+0001d0 3020                      		CPWI r17, r18, BUFFER_SIZE
+0001d1 f410                      		BRSH processreceiveddata_loop1_end
+0001d2 940c 00e9                 		JMP processreceiveddata_loop1_start
+                                 	processreceiveddata_loop1_end:
                                  
-0001d4 2f03                      	MOV r16, r19
-0001d5 2f14                      	MOV r17, r20
-0001d6 940e 01df                 	CALL store_on_shield
+0001d4 940e 01dd                 	CALL display_checksum
                                  
-0001d8 915f                      	POP r21
-0001d9 914f                      	POP r20
-0001da 913f                      	POP r19
-0001db 912f                      	POP r18
-0001dc 911f                      	POP r17
-0001dd 910f                      	POP r16
-0001de 9508                      	RET
+0001d6 915f                      	POP r21
+0001d7 914f                      	POP r20
+0001d8 913f                      	POP r19
+0001d9 912f                      	POP r18
+0001da 911f                      	POP r17
+0001db 910f                      	POP r16
+0001dc 9508                      	RET
+                                 
+                                 // void display_checksum();
+                                 display_checksum:
+0001dd 930f                      	PUSH r16
+0001de 931f                      	PUSH r17
+0001df 932f                      	PUSH r18
+0001e0 933f                      	PUSH r19
+0001e1 934f                      	PUSH r20
+0001e2 935f                      	PUSH r21
+                                 
+0001e3 2711                      	CLR r17
+0001e4 2722                      	CLR r18
+0001e5 2733                      	CLR r19
+0001e6 2744                      	CLR r20
+                                 
+                                 	displaychecksum_start:
+0001e7 e0f1
+0001e8 e0e0                      	SETZ data_buffer
+0001e9 0ff1
+0001ea 0fe2
+0001eb f408
+0001ec 95f3                      	SUMZW r17, r18
+0001ed 8150                      	LD r21, Z
+                                 
+0001ee 0f45
+0001ef f408
+0001f0 9533                      	ADDW1 r19, r20, r21
+0001f1 9523
+0001f2 f409
+0001f3 9513                      	INCW r17, r18
+                                 
+0001f4 3012
+0001f5 f409
+0001f6 3020                      	CPWI r17, r18, BUFFER_SIZE
+0001f7 f378                      	BRLO displaychecksum_start
+                                 
+0001f8 2f03                      	MOV r16, r19
+0001f9 2f14                      	MOV r17, r20
+0001fa 940e 0203                 	CALL store_on_shield
+                                 
+0001fc 915f                      	POP r21
+0001fd 914f                      	POP r20
+0001fe 913f                      	POP r19
+0001ff 912f                      	POP r18
+000200 911f                      	POP r17
+000201 910f                      	POP r16
+000202 9508                      	RET
                                  
                                  // void store_on_shield(short n);
                                  store_on_shield:
-0001df 930f                      	PUSH r16
-0001e0 931f                      	PUSH r17
-0001e1 932f                      	PUSH r18
-0001e2 933f                      	PUSH r19
+000203 930f                      	PUSH r16
+000204 931f                      	PUSH r17
+000205 932f                      	PUSH r18
+000206 933f                      	PUSH r19
                                  
-0001e3 2f20                      	MOV r18, r16
-0001e4 9526                      	LSR r18
-0001e5 9526                      	LSR r18
-0001e6 9526                      	LSR r18
-0001e7 9526                      	LSR r18
-0001e8 e0f3
-0001e9 e0e4
-0001ea 0fe2
-0001eb f408
-0001ec 95f3
-0001ed 8130                      	LOADBYTEFROMSLICE r19, shield_digits, r18
-0001ee 9330 0300                 	STS shield_buffer + 0, r19
+000207 2f20                      	MOV r18, r16
+000208 9526                      	LSR r18
+000209 9526                      	LSR r18
+00020a 9526                      	LSR r18
+00020b 9526                      	LSR r18
+00020c e0f7
+00020d e0e4
+00020e 0fe2
+00020f f408
+000210 95f3
+000211 8130                      	LOADBYTEFROMSLICE r19, shield_digits, r18
+000212 9330 0700                 	STS shield_buffer + 0, r19
                                  
-0001f0 2f20                      	MOV r18, r16
-0001f1 702f                      	ANDI r18, 0b00001111
-0001f2 e0f3
-0001f3 e0e4
-0001f4 0fe2
-0001f5 f408
-0001f6 95f3
-0001f7 8130                      	LOADBYTEFROMSLICE r19, shield_digits, r18
-0001f8 9330 0301                 	STS shield_buffer + 1, r19
+000214 2f20                      	MOV r18, r16
+000215 702f                      	ANDI r18, 0b00001111
+000216 e0f7
+000217 e0e4
+000218 0fe2
+000219 f408
+00021a 95f3
+00021b 8130                      	LOADBYTEFROMSLICE r19, shield_digits, r18
+00021c 9330 0701                 	STS shield_buffer + 1, r19
                                  
-0001fa 2f21                      	MOV r18, r17
-0001fb 9526                      	LSR r18
-0001fc 9526                      	LSR r18
-0001fd 9526                      	LSR r18
-0001fe 9526                      	LSR r18
-0001ff e0f3
-000200 e0e4
-000201 0fe2
-000202 f408
-000203 95f3
-000204 8130                      	LOADBYTEFROMSLICE r19, shield_digits, r18
-000205 9330 0302                 	STS shield_buffer + 2, r19
+00021e 2f21                      	MOV r18, r17
+00021f 9526                      	LSR r18
+000220 9526                      	LSR r18
+000221 9526                      	LSR r18
+000222 9526                      	LSR r18
+000223 e0f7
+000224 e0e4
+000225 0fe2
+000226 f408
+000227 95f3
+000228 8130                      	LOADBYTEFROMSLICE r19, shield_digits, r18
+000229 9330 0702                 	STS shield_buffer + 2, r19
                                  
-000207 2f21                      	MOV r18, r17
-000208 702f                      	ANDI r18, 0b00001111
-000209 e0f3
-00020a e0e4
-00020b 0fe2
-00020c f408
-00020d 95f3
-00020e 8130                      	LOADBYTEFROMSLICE r19, shield_digits, r18
-00020f 9330 0303                 	STS shield_buffer + 3, r19
+00022b 2f21                      	MOV r18, r17
+00022c 702f                      	ANDI r18, 0b00001111
+00022d e0f7
+00022e e0e4
+00022f 0fe2
+000230 f408
+000231 95f3
+000232 8130                      	LOADBYTEFROMSLICE r19, shield_digits, r18
+000233 9330 0703                 	STS shield_buffer + 3, r19
                                  
-000211 913f                      	POP r19
-000212 912f                      	POP r18
-000213 911f                      	POP r17
-000214 910f                      	POP r16
-000215 9508                      	RET
+000235 913f                      	POP r19
+000236 912f                      	POP r18
+000237 911f                      	POP r17
+000238 910f                      	POP r16
+000239 9508                      	RET
                                  
                                  // timer 0 interruption
                                  tmr0_start:
-000216 920f                      	PUSH r0
-000217 b60f                      	IN r0, SREG
-000218 920f                      	PUSH r0
-000219 930f                      	PUSH r16
+00023a 920f                      	PUSH r0
+00023b b60f                      	IN r0, SREG
+00023c 920f                      	PUSH r0
+00023d 930f                      	PUSH r16
                                  
-00021a 940e 0221                 	CALL display_shield
+00023e 940e 0245                 	CALL display_shield
                                  
                                  tmr0_end:
-00021c 910f                      	POP r16
-00021d 900f                      	POP r0
-00021e be0f                      	OUT SREG, r0
-00021f 900f                      	POP r0
-000220 9518                      	RETI
-                                 
-                                 // display_shield(): void
-                                 ; The first thing to call in receiver timer
-                                 .DSEG
-00031b                           	display_shield_digit: .BYTE 1
-                                 .CSEG
-                                 display_shield:
-000221 920f                      	PUSH r0
-000222 b60f                      	IN r0, SREG
-000223 920f                      	PUSH r0
-000224 930f                      	PUSH r16
-000225 936f                      	PUSH r22
-000226 921f                      	PUSH r1
-000227 922f                      	PUSH r2
-000228 9160 031b                 	LDS r22, display_shield_digit
-                                 
-00022a e0f3
-00022b e0e0                      	SETZ shield_buffer
-00022c 0fe6
-00022d f408
-00022e 95f3                      	SUMZ r22
-00022f 8010                      	LD r1, Z
-                                 
-000230 e0f3
-000231 e1e4                      	SETZ digits_buffer
-000232 0fe6
-000233 f408
-000234 95f3                      	SUMZ r22
-000235 8020                      	LD r2, Z
-                                 
-000236 940e 0026                 	CALL write_shield
-                                 
-000238 9563                      	INC r22
-000239 3064                      	CPI r22, 4
-00023a f051                      	BREQ display_shield_reset
-                                 
-                                 display_shield_end:
-00023b 9360 031b                 	STS display_shield_digit, r22
-00023d 902f                      	POP r2
-00023e 901f                      	POP r1
-00023f 916f                      	POP r22
 000240 910f                      	POP r16
 000241 900f                      	POP r0
 000242 be0f                      	OUT SREG, r0
 000243 900f                      	POP r0
-000244 9508                      	RET
+000244 9518                      	RETI
+                                 
+                                 // display_shield(): void
+                                 ; The first thing to call in receiver timer
+                                 .DSEG
+00071a                           	display_shield_digit: .BYTE 1
+                                 .CSEG
+                                 display_shield:
+000245 920f                      	PUSH r0
+000246 b60f                      	IN r0, SREG
+000247 920f                      	PUSH r0
+000248 930f                      	PUSH r16
+000249 936f                      	PUSH r22
+00024a 921f                      	PUSH r1
+00024b 922f                      	PUSH r2
+00024c 9160 071a                 	LDS r22, display_shield_digit
+                                 
+00024e e0f7
+00024f e0e0                      	SETZ shield_buffer
+000250 0fe6
+000251 f408
+000252 95f3                      	SUMZ r22
+000253 8010                      	LD r1, Z
+                                 
+000254 e0f7
+000255 e1e4                      	SETZ digits_buffer
+000256 0fe6
+000257 f408
+000258 95f3                      	SUMZ r22
+000259 8020                      	LD r2, Z
+                                 
+00025a 940e 0026                 	CALL write_shield
+                                 
+00025c 9563                      	INC r22
+00025d 3064                      	CPI r22, 4
+00025e f051                      	BREQ display_shield_reset
+                                 
+                                 display_shield_end:
+00025f 9360 071a                 	STS display_shield_digit, r22
+000261 902f                      	POP r2
+000262 901f                      	POP r1
+000263 916f                      	POP r22
+000264 910f                      	POP r16
+000265 900f                      	POP r0
+000266 be0f                      	OUT SREG, r0
+000267 900f                      	POP r0
+000268 9508                      	RET
                                  
                                  display_shield_reset:
-000245 e060                      	LDI r22, 0
-000246 cff4                      	RJMP display_shield_end
+000269 e060                      	LDI r22, 0
+00026a cff4                      	RJMP display_shield_end
 
 
 RESOURCE USE INFORMATION
@@ -1990,38 +2044,38 @@ counted separately from r26..r31 here.
 "ATmega328P" register use summary:
 x  :   0 y  :   0 z  :  37 r0 :  18 r1 :   5 r2 :   4 r3 :   0 r4 :   0 
 r5 :   0 r6 :   0 r7 :   0 r8 :   0 r9 :   0 r10:   0 r11:   0 r12:   0 
-r13:   0 r14:   0 r15:   0 r16: 117 r17:  49 r18:  65 r19: 112 r20:  46 
-r21:  45 r22:   9 r23:   0 r24:   0 r25:   0 r26:   0 r27:   0 r28:   0 
-r29:   0 r30:  22 r31:  24 
-Registers used: 13 out of 35 (37.1%)
+r13:   0 r14:   0 r15:   0 r16: 108 r17:  28 r18:  48 r19:  59 r20:  41 
+r21: 103 r22:  41 r23:  32 r24:   0 r25:   0 r26:   0 r27:   0 r28:   0 
+r29:   0 r30:  29 r31:  36 
+Registers used: 14 out of 35 (40.0%)
 
 "ATmega328P" instruction use summary:
-.lds  :   0 .sts  :   0 adc   :   0 add   :  11 adiw  :   0 and   :   0 
+.lds  :   0 .sts  :   0 adc   :   0 add   :  21 adiw  :   0 and   :   0 
 andi  :   4 asr   :   0 bclr  :   0 bld   :   0 brbc  :   0 brbs  :   0 
-brcc  :   9 brcs  :   1 break :   0 breq  :   1 brge  :   0 brhc  :   0 
+brcc  :  14 brcs  :   1 break :   0 breq  :   1 brge  :   0 brhc  :   0 
 brhs  :   0 brid  :   0 brie  :   0 brlo  :   2 brlt  :   0 brmi  :   0 
-brne  :  21 brpl  :   0 brsh  :   0 brtc  :   0 brts  :   0 brvc  :   0 
-brvs  :   0 bset  :   0 bst   :   0 call  :   6 cbi   :   3 cbr   :   0 
-clc   :   0 clh   :   0 cli   :   0 cln   :   0 clr   :  14 cls   :   0 
+brne  :  24 brpl  :   0 brsh  :   1 brtc  :   0 brts  :   0 brvc  :   0 
+brvs  :   0 bset  :   0 bst   :   0 call  :   7 cbi   :   3 cbr   :   0 
+clc   :   0 clh   :   0 cli   :   0 cln   :   0 clr   :  16 cls   :   0 
 clt   :   0 clv   :   0 clz   :   0 com   :   0 cp    :   0 cpc   :   0 
-cpi   :  21 cpse  :   0 dec   :   1 eor   :  26 fmul  :   0 fmuls :   0 
-fmulsu:   0 icall :   0 ijmp  :   0 in    :   7 inc   :  16 jmp   :   4 
-ld    :   7 ldd   :   0 ldi   :  76 lds   :   7 lpm   :   0 lsl   :  18 
+cpi   :  23 cpse  :   0 dec   :   1 eor   :  26 fmul  :   0 fmuls :   0 
+fmulsu:   0 icall :   0 ijmp  :   0 in    :   7 inc   :  25 jmp   :   5 
+ld    :   9 ldd   :   0 ldi   :  74 lds   :   5 lpm   :   0 lsl   :  18 
 lsr   :  51 mov   :  24 movw  :   0 mul   :   0 muls  :   0 mulsu :   0 
-neg   :   0 nop   :   0 or    :   1 ori   :  26 out   :  16 pop   :  40 
-push  :  40 rcall :   0 ret   :   5 reti  :   2 rjmp  :   4 rol   :   0 
+neg   :   0 nop   :   0 or    :   1 ori   :  25 out   :  14 pop   :  46 
+push  :  46 rcall :   0 ret   :   6 reti  :   2 rjmp  :   4 rol   :   0 
 ror   :   0 sbc   :   0 sbci  :   0 sbi   :   3 sbic  :   0 sbis  :   0 
 sbiw  :   0 sbr   :   0 sbrc  :   0 sbrs  :   0 sec   :   0 seh   :   0 
 sei   :   1 sen   :   0 ser   :   0 ses   :   0 set   :   0 sev   :   0 
-sez   :   0 sleep :   0 spm   :   0 st    :  30 std   :   0 sts   :  18 
+sez   :   0 sleep :   0 spm   :   0 st    :  28 std   :   0 sts   :  16 
 sub   :   0 subi  :   0 swap  :   0 tst   :   0 wdr   :   0 
-Instructions used: 34 out of 113 (30.1%)
+Instructions used: 35 out of 113 (31.0%)
 
 "ATmega328P" memory use summary [bytes]:
 Segment   Begin    End      Code   Data   Used    Size   Use%
 ---------------------------------------------------------------
-[.cseg] 0x000000 0x00048e   1102      0   1102   32768   3.4%
-[.dseg] 0x000100 0x00031c      0    540    540    2048  26.4%
+[.cseg] 0x000000 0x0004d6   1174      0   1174   32768   3.6%
+[.dseg] 0x000100 0x00071b      0   1563   1563    2048  76.3%
 [.eseg] 0x000000 0x000000      0      0      0    1024   0.0%
 
 Assembly complete, 0 errors, 0 warnings

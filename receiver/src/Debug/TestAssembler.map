@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.2.8  C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm Thu Dec 02 15:41:15 2021
+AVRASM ver. 2.2.8  C:\Users\santi\Programming\Studies\Proyecto_final_microprocesadores\receiver\src\main.asm Fri Dec 03 09:54:59 2021
 
 
 EQU  SIGNATURE_000 0000001e
@@ -696,36 +696,41 @@ EQU  TWIaddr      00000030
 EQU  SPMRaddr     00000032
 EQU  INT_VECTORS_SIZE 00000034
 CSEG start        00000039
-CSEG tmr0_start   00000216
-CSEG usartR_start 000000b0
+CSEG tmr0_start   0000023a
+CSEG usartR_start 000000a7
 CSEG write_shield 00000026
 CSEG write_bytes_into_PB0 0000002e
 CSEG PB0_loop     0000002f
 CSEG PB0_set      00000034
 CSEG PB0_set_end  00000035
 DSEG data_buffer  00000100
-DSEG shield_buffer 00000300
-DSEG shield_digits 00000304
-DSEG digits_buffer 00000314
-DSEG usartR_hamming_buffer 0000031a
-DSEG usartR_counter 00000318
-CSEG program      000000af
-CSEG usartR_continue 000000bf
-CSEG usartR_end   000001af
-CSEG usartR_store_byte 000000ca
-CSEG xor_p1_end@HAMMINGTONIBBLE@1661 000000e8
-CSEG xor_p2_end@HAMMINGTONIBBLE@1661 000000fa
-CSEG xor_p4_end@HAMMINGTONIBBLE@1661 0000010e
-CSEG xor_p1_end@HAMMINGTONIBBLE@1768 00000140
-CSEG xor_p2_end@HAMMINGTONIBBLE@1768 00000152
-CSEG xor_p4_end@HAMMINGTONIBBLE@1768 00000166
-CSEG cpwi_end@CPWI@1930 000001a3
-CSEG display_checksum 000001b9
-CSEG displaychecksum_start 000001c3
-CSEG cpwi_end@CPWI@2005 000001d3
-CSEG store_on_shield 000001df
-CSEG display_shield 00000221
-CSEG tmr0_end     0000021c
-DSEG display_shield_digit 0000031b
-CSEG display_shield_reset 00000245
-CSEG display_shield_end 0000023b
+DSEG hamming_buffer 00000300
+DSEG shield_buffer 00000700
+DSEG shield_digits 00000704
+DSEG digits_buffer 00000714
+DSEG usartR_counter 00000718
+CSEG program      000000a6
+CSEG usartR_continue 000000b6
+CSEG usartR_end   000000d6
+CSEG cpwi_end@CPWI@1659 000000ce
+CSEG process_received_data 000000e0
+CSEG processreceiveddata_loop1_start 000000e9
+CSEG processreceiveddata_loop1_store_byte 000000f7
+CSEG processreceiveddata_loop1_guard 000001ce
+CSEG xor_p1_end@HAMMINGTONIBBLE@1772 00000121
+CSEG xor_p2_end@HAMMINGTONIBBLE@1772 00000133
+CSEG xor_p4_end@HAMMINGTONIBBLE@1772 00000147
+CSEG xor_p1_end@HAMMINGTONIBBLE@1879 00000179
+CSEG xor_p2_end@HAMMINGTONIBBLE@1879 0000018b
+CSEG xor_p4_end@HAMMINGTONIBBLE@1879 0000019f
+CSEG cpwi_end@CPWI@2027 000001d1
+CSEG processreceiveddata_loop1_end 000001d4
+CSEG display_checksum 000001dd
+CSEG displaychecksum_start 000001e7
+CSEG cpwi_end@CPWI@2093 000001f7
+CSEG store_on_shield 00000203
+CSEG display_shield 00000245
+CSEG tmr0_end     00000240
+DSEG display_shield_digit 0000071a
+CSEG display_shield_reset 00000269
+CSEG display_shield_end 0000025f

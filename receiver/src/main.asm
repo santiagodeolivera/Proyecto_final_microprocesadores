@@ -11,6 +11,7 @@
 
 .DSEG
 	data_buffer: .BYTE BUFFER_SIZE
+	hamming_buffer: .BYTE BUFFER_SIZE * 2
 
 	shield_buffer: .BYTE 4
 	shield_digits: .BYTE 16
@@ -24,9 +25,6 @@ start:
 	OUT DDRC, r16
 	LDI r16, 0b11111111
 	OUT PORTC, r16
-	LDI r16, 0b11111111
-	OUT DDRB, r16
-	OUT PORTB, r16
 
 	SETZ shield_digits
 	STZ 0b00000011 ; 0
@@ -57,10 +55,6 @@ start:
 	STZ 0b01000100
 	STZ 0b00100010
 	STZ 0b00010001
-
-	SETZ usartR_hamming_buffer
-	STZ -1
-	STZ -1
 	
 	SETZ usartR_counter
 	STZ 0
@@ -93,7 +87,6 @@ program:
 // USART read complete interruption
 .DSEG
 	usartR_counter: .BYTE 2
-	usartR_hamming_buffer: .BYTE 1
 .CSEG
 usartR_start:
 	PUSH r0
@@ -106,50 +99,38 @@ usartR_start:
 	PUSH r20
 	PUSH r21
 
+	// If the counter's high byte is 0xFF, return
 	LDS r17, usartR_counter + 0
 	CPI r17, 0xFF
 	BRNE usartR_continue
 		JMP usartR_end
-
 	usartR_continue:
+
+	// Read byte from USART and clear bit 0
 	LDS r17, UDR0
 	ANDI r17, 0b11111110
 
-	LDS r18, usartR_hamming_buffer
-	ORI r18, 0b11111110
-	CPI r18, 0xFF
-	BRNE usartR_store_byte
-		STS usartR_hamming_buffer, r17
-		RJMP usartR_end
+	// Store byte in hamming_buffer
+	LDS r18, usartR_counter + 0
+	LDS r19, usartR_counter + 1
+	SETZ hamming_buffer
+	SUMZW r18, r19
+	ST Z, r17
 
-	usartR_store_byte:
-		LDS r18, usartR_hamming_buffer
-		HAMMINGTOBYTE r18, r17, r19, r20, r21
+	// Increase counter
+	INCW r18, r19
+	STS usartR_counter + 0, r18
+	STS usartR_counter + 1, r19
 
-		SETZ usartR_hamming_buffer
-		STZ -1
+	// If counter < BUFFER_SIZE * 2, return
+	CPWI r18, r19, BUFFER_SIZE * 2
+	BRLO usartR_end
 
-		LDS r20, usartR_counter + 0
-		LDS r21, usartR_counter + 1
-		SETZ data_buffer
-		SUMZW r20, r21
-		ST Z, r19
-
-		INCW r20, r21
-		STS usartR_counter + 0, r20
-		STS usartR_counter + 1, r21
-
-		CPWI r20, r21, BUFFER_SIZE
-		BRLO usartR_end
-
-			CALL display_checksum
-			LDI r20, -1
-			LDI r21, -1
-			STS usartR_counter + 0, r20
-			STS usartR_counter + 1, r21
-			LDI r16, 0
-			STS UCSR0B, r16
-
+	// Transform hamming bytes into normal bytes and display checksum
+	CALL process_received_data
+	LDI r18, -1
+	STS usartR_counter + 0, r18
+	STS usartR_counter + 1, r18
 	
 usartR_end:
 	POP r21
@@ -162,6 +143,60 @@ usartR_end:
 	OUT SREG, r0
 	POP r0
 	RETI
+
+// void process_received_data();
+process_received_data:
+	PUSH r16
+	PUSH r17
+	PUSH r18
+	PUSH r19
+	PUSH r20
+	PUSH r21
+
+	CLR r17
+	CLR r18
+
+	LDI r19, -1
+
+	processreceiveddata_loop1_start:
+	CPI r19, -1
+	BRNE processreceiveddata_loop1_store_byte
+		SETZ hamming_buffer
+		SUMZW r17, r18
+		SUMZW r17, r18
+		LD r19, Z
+		RJMP processreceiveddata_loop1_guard
+
+	processreceiveddata_loop1_store_byte:
+		SETZ hamming_buffer
+		SUMZW r17, r18
+		SUMZW r17, r18
+		INCW ZH, ZL
+		LD r20, Z
+
+		HAMMINGTOBYTE r19, r20, r21, r22, r23
+		SETZ data_buffer
+		SUMZW r17, r18
+		ST Z, r21
+
+		LDI r19, -1
+		INCW r17, r18
+
+	processreceiveddata_loop1_guard:
+		CPWI r17, r18, BUFFER_SIZE
+		BRSH processreceiveddata_loop1_end
+		JMP processreceiveddata_loop1_start
+	processreceiveddata_loop1_end:
+
+	CALL display_checksum
+
+	POP r21
+	POP r20
+	POP r19
+	POP r18
+	POP r17
+	POP r16
+	RET
 
 // void display_checksum();
 display_checksum:

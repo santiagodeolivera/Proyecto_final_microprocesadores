@@ -12,24 +12,31 @@
 #define BUFFER_SIZE 512
 
 .DSEG
+	; Stores the pseudorandom bytes
 	data_buffer: .BYTE BUFFER_SIZE
 
+	; This memory space acts as an intermediate between the shield and other parts of the program which modify what the shield displays
 	shield_buffer: .BYTE 4
+
+	; A L.U.T. to translate a nibble into its correspondent digit to display on shield
 	shield_digits: .BYTE 16
+
+	; A L.U.T. used only by the shield interruption
 	digits_buffer: .BYTE 4
 .CSEG
 start:
+	; Prepare PD1 (USART output pin) for sending data
 	LDI r16, 0b00000010
 	OUT DDRD, r16
 	OUT PORTD, r16
+	
+	; Prepare PC1 for input interruption
 	LDI r16, 0b00000000
 	OUT DDRC, r16
 	LDI r16, 0b11111111
 	OUT PORTC, r16
-	LDI r16, 0b11111111
-	OUT DDRB, r16
-	OUT PORTB, r16
-
+	
+	; Set shield digits
 	SETZ shield_digits
 	STZ 0b00000011 ; 0
 	STZ 0b10011111 ; 1
@@ -48,12 +55,14 @@ start:
 	STZ 0b01100001 ; E
 	STZ 0b01110001 ; F
 
+	; Initialize shield with all leds turned off
 	SETZ shield_buffer
 	STZ -1
 	STZ -1
 	STZ -1
 	STZ -1
 
+	; Set digits buffer
 	SETZ digits_buffer
 	STZ 0b10001000
 	STZ 0b01000100
@@ -77,9 +86,12 @@ start:
 	SETZ pseudorand_mem
 	STZ -1
 
+	; Timer 0 handles the operation of reading the shield buffer and displaying the contents on the shield
 	TIMER0SETUP 50
-	TIMER1SETUP 20
 	SHIELDSETUP
+
+	; Timer 1 handles the main program
+	TIMER1SETUP 20
 
 	LDI r16, 0b01000000
 	STS UCSR0A, r16
@@ -92,6 +104,7 @@ start:
 	LDI r16, 0b11111111
 	STS UBRR0L, r16
 
+	; The button interrupt determines when to start the program
 	LDI r16, 0b00000010
 	STS PCMSK1, r16
 	STS PCICR, r16
@@ -175,7 +188,7 @@ tmr1_end:
 	POP r0
 	RETI
 
-// void send_data();
+// void write_data();
 write_data:
 	PUSH r16
 	PUSH r17
@@ -331,8 +344,7 @@ tmr0_end:
 	POP r0
 	RETI
 
-// display_shield(): void
-; The first thing to call in receiver timer
+// void display_shield();
 .DSEG
 	display_shield_digit: .BYTE 1
 .CSEG

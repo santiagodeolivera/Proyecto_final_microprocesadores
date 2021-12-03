@@ -1,3 +1,4 @@
+; Prepare the ports to send data to the shield
 .MACRO SHIELDSETUP
 	PUSH r16
 	IN		r16,    DDRB

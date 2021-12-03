@@ -1,2 +1,4 @@
-transmitter\src\Debug
-receiver\src\Debug
+transmitter/src/Debug
+transmitter/src/.vs
+receiver/src/Debug
+receiver/src/.vs

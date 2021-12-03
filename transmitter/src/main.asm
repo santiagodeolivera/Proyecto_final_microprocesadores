@@ -9,11 +9,14 @@
 
 .INCLUDE "lib.asm"
 
-#define BUFFER_SIZE 1
+#define BUFFER_SIZE 512
 
 .DSEG
 	; Stores the pseudorandom bytes
-	data_buffer: .BYTE BUFFER_SIZE + 2
+	data_buffer: .BYTE BUFFER_SIZE + 3
+
+	; Stores the hamming bytes before sending them
+	hamming_buffer: .BYTE (BUFFER_SIZE + 3) * 2
 
 	; This memory space acts as an intermediate between the shield and other parts of the program which modify what the shield displays
 	shield_buffer: .BYTE 4
@@ -86,6 +89,7 @@ start:
 	SETZ tmr1_checksum
 	STZ 0
 	STZ 0
+	STZ 0
 
 	SETZ pseudorand_mem
 	STZ -1
@@ -95,7 +99,7 @@ start:
 	SHIELDSETUP
 
 	; Timer 1 handles the main program
-	TIMER1SETUP 50
+	TIMER1SETUP 100
 
 	LDI r16, 0b01000000
 	STS UCSR0A, r16
@@ -163,7 +167,7 @@ pcint1_end:
 	tmr1_state: .BYTE 1
 	tmr1_counter: .BYTE 2
 	tmr1_hamming_buffer: .BYTE 1
-	tmr1_checksum: .BYTE 2
+	tmr1_checksum: .BYTE 3
 .CSEG
 tmr1_start:
 	PUSH r0
@@ -200,6 +204,7 @@ write_data:
 	PUSH r19
 	PUSH r20
 	PUSH r21
+	PUSH r22
 
 	CALL generate_pseudorandom_number
 	MOV r17, r16
@@ -211,11 +216,20 @@ write_data:
 	SUMZW r18, r19
 	ST Z, r17
 
+	BYTETOHAMMING r17, r20, r21, r22
+	SETZ hamming_buffer
+	SUMZW r18, r19
+	SUMZW r18, r19
+	ST Z+, r20
+	ST Z+, r21
+
 	LDS r20, tmr1_checksum + 0
 	LDS r21, tmr1_checksum + 1
-	ADDW1 r20, r21, r17
+	LDS r22, tmr1_checksum + 2
+	ADD3B1 r20, r21, r22, r17
 	STS tmr1_checksum + 0, r20
 	STS tmr1_checksum + 1, r21
+	STS tmr1_checksum + 2, r22
 
 	INCW r18, r19
 	STS tmr1_counter + 0, r18
@@ -227,28 +241,40 @@ write_data:
 
 	writedata_continue:
 	
-		PUSH r22
 		PUSH r23
 		PUSH r24
+		PUSH r25
 
-		BYTETONIBBLE r20, r22, r23
-		LOADBYTEFROMSLICE r24, shield_digits, r22
-		STS shield_buffer + 0, r24
-		LOADBYTEFROMSLICE r24, shield_digits, r23
-		STS shield_buffer + 1, r24
+		BYTETONIBBLE r21, r23, r24
+		LOADBYTEFROMSLICE r25, shield_digits, r23
+		STS shield_buffer + 0, r25
+		LOADBYTEFROMSLICE r25, shield_digits, r24
+		STS shield_buffer + 1, r25
 
-		BYTETONIBBLE r21, r22, r23
-		LOADBYTEFROMSLICE r24, shield_digits, r22
-		STS shield_buffer + 2, r24
-		LOADBYTEFROMSLICE r24, shield_digits, r23
-		STS shield_buffer + 3, r24
+		BYTETONIBBLE r22, r23, r24
+		LOADBYTEFROMSLICE r25, shield_digits, r23
+		STS shield_buffer + 2, r25
+		LOADBYTEFROMSLICE r25, shield_digits, r24
+		STS shield_buffer + 3, r25
 
 		STS data_buffer + BUFFER_SIZE + 0, r20
 		STS data_buffer + BUFFER_SIZE + 1, r21
+		STS data_buffer + BUFFER_SIZE + 2, r22
 
+		SETZ hamming_buffer + (BUFFER_SIZE * 2)
+		BYTETOHAMMING r20, r23, r24, r25
+		ST Z+, r23
+		ST Z+, r24
+		BYTETOHAMMING r21, r23, r24, r25
+		ST Z+, r23
+		ST Z+, r24
+		BYTETOHAMMING r22, r23, r24, r25
+		ST Z+, r23
+		ST Z+, r24
+
+		POP r25
 		POP r24
 		POP r23
-		POP r22
 
 		LDI r21, 1
 		STS tmr1_state, r21
@@ -258,6 +284,7 @@ write_data:
 	STS tmr1_counter + 1, r21
 
 writedata_end:
+	POP r22
 	POP r21
 	POP r20
 	POP r19
@@ -277,7 +304,7 @@ send_data:
 	LDS r17, tmr1_counter + 0
 	LDS r18, tmr1_counter + 1
 
-	CPWI r17, r18, BUFFER_SIZE + 2
+	CPWI r17, r18, (BUFFER_SIZE + 3) * 2
 	BRSH senddata_end0
 	RJMP senddata_continue0
 
@@ -289,36 +316,14 @@ send_data:
 	CPI r16, 0
 	BREQ senddata_end0
 
-	LDS r19, tmr1_hamming_buffer
-	MOV r20, r19
-	ORI r19, 0b01111111
-	CPI r19, 0xFF
-	BREQ senddata_write_normal
-		LSL r20
-		STS UDR0, r20
-		LDI r20, 0b11111111
-		STS tmr1_hamming_buffer, r20
+	SETZ hamming_buffer
+	SUMZW r17, r18
+	LD r19, Z
+	STS UDR0, r19
 
-		INCW r17, r18
-		STS tmr1_counter + 0, r17
-		STS tmr1_counter + 1, r18
-
-		CPWI r17, r18, BUFFER_SIZE + 2
-		BRLO senddata_end0
-
-			LDS r16, PCMSK1
-			ANDI r16, 0b11111101
-			STS PCMSK1, r16
-			LDI r16, 0b00000000
-			STS UCSR0B, r16
-
-		RJMP senddata_end
-
-	senddata_write_normal:
-		SETZ data_buffer
-		SUMZW r17, r18
-		LD r19, Z
-		WRITEBYTE r19, r18, r17, r16
+	INCW r17, r18
+	STS tmr1_counter + 0, r17
+	STS tmr1_counter + 1, r18
 
 senddata_end:
 	POP r20

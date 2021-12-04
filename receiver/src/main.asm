@@ -110,16 +110,16 @@ usartR_start:
 	PUSH r20
 	PUSH r21
 
-	; If the counter's high byte is 0xFF, return
-	LDS r17, usartR_counter + 0
-	CPI r17, 0xFF
-	BRNE usartR_continue
-		JMP usartR_end
-	usartR_continue:
-
 	; Read byte from USART and clear bit 0, which doesn't matter in a hamming byte
 	LDS r17, UDR0
 	ANDI r17, 0b11111110
+
+	; If the counter's high byte is 0xFF, return
+	LDS r18, usartR_counter + 0
+	CPI r18, 0xFF
+	BRNE usartR_continue
+		JMP usartR_end
+	usartR_continue:
 
 	; Store byte in hamming_buffer
 	LDS r18, usartR_counter + 0
@@ -158,7 +158,6 @@ usartR_end:
 ; 1. Transforms the hamming bytes into normal bytes in the data buffer
 ; 2. Calculates the checksum, compares it with the transmitted one
 ; 3. Displays the checksum in the shield (if they match, otherwise, it displays "Err")
-; 4. Disables the USART receiver
 ; void process_received_data();
 process_received_data:
 	PUSH r16
@@ -257,10 +256,6 @@ process_received_data:
 		POP r22
 		POP r21
 		POP r20
-
-		; Deactivate USART Receiver and Receive Complete Interrupt
-		LDI r16, 0
-		STS UCSR0B, r16
 
 	POP r21
 	POP r20

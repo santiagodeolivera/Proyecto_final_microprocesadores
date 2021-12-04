@@ -360,7 +360,8 @@ senddata_end:
 	POP r17
 	RET
 
-; byte can_write();
+; Determines whether data can be transmitted through USART via the UDRE0 bit
+; bool can_write();
 can_write:
 	LDS r16, UCSR0A
 	ORI r16, 0b11011111
@@ -386,6 +387,7 @@ tmr0_end:
 	POP r0
 	RETI
 
+; Displays one of the digits in the shield buffer
 ; void display_shield();
 .DSEG
 	display_shield_digit: .BYTE 1
@@ -429,6 +431,7 @@ display_shield_reset:
 	LDI r22, 0
 	RJMP display_shield_end
 
+; Generates a pseudorandom number via an XORshift algorithm
 ; byte generate_pseudorandom_number();
 .DSEG
 	pseudorand_mem: .BYTE 1

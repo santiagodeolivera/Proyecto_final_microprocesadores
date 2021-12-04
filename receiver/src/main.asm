@@ -95,7 +95,7 @@ program:
 	rJMP program
 
 
-// USART read complete interruption
+; USART read complete interruption
 .DSEG
 	usartR_counter: .BYTE 2
 .CSEG
@@ -110,34 +110,34 @@ usartR_start:
 	PUSH r20
 	PUSH r21
 
-	// If the counter's high byte is 0xFF, return
-	LDS r17, usartR_counter + 0
-	CPI r17, 0xFF
+	; Read byte from USART and clear bit 0, which doesn't matter in a hamming byte
+	LDS r17, UDR0
+	ANDI r17, 0b11111110
+
+	; If the counter's high byte is 0xFF, return
+	LDS r18, usartR_counter + 0
+	CPI r18, 0xFF
 	BRNE usartR_continue
 		JMP usartR_end
 	usartR_continue:
 
-	// Read byte from USART and clear bit 0
-	LDS r17, UDR0
-	ANDI r17, 0b11111110
-
-	// Store byte in hamming_buffer
+	; Store byte in hamming_buffer
 	LDS r18, usartR_counter + 0
 	LDS r19, usartR_counter + 1
 	SETZ hamming_buffer
 	SUMZW r18, r19
 	ST Z, r17
 
-	// Increase counter
+	; Increase counter
 	INCW r18, r19
 	STS usartR_counter + 0, r18
 	STS usartR_counter + 1, r19
 
-	// If counter < BUFFER_SIZE * 2, return
+	; If counter < BUFFER_SIZE * 2, return
 	CPWI r18, r19, (BUFFER_SIZE + 3) * 2
 	BRLO usartR_end
 
-	// Transform hamming bytes into normal bytes and display checksum
+	; Transform hamming bytes into normal bytes and display checksum
 	CALL process_received_data
 	LDI r18, -1
 	STS usartR_counter + 0, r18
@@ -155,7 +155,10 @@ usartR_end:
 	POP r0
 	RETI
 
-// void process_received_data();
+; 1. Transforms the hamming bytes into normal bytes in the data buffer
+; 2. Calculates the checksum, compares it with the transmitted one
+; 3. Displays the checksum in the shield (if they match, otherwise, it displays "Err")
+; void process_received_data();
 process_received_data:
 	PUSH r16
 	PUSH r17
@@ -169,6 +172,7 @@ process_received_data:
 
 	LDI r19, -1
 
+	; Translate all hamming bytes into normal types via a loop
 	processreceiveddata_loop1_start:
 	CPI r19, -1
 	BRNE processreceiveddata_loop1_store_byte
@@ -176,7 +180,7 @@ process_received_data:
 		SUMZW r17, r18
 		SUMZW r17, r18
 		LD r19, Z
-		RJMP processreceiveddata_loop1_guard
+		RJMP processreceiveddata_loop1_start
 
 	processreceiveddata_loop1_store_byte:
 		SETZ hamming_buffer
@@ -206,6 +210,7 @@ process_received_data:
 		PUSH r24
 		PUSH r25
 
+		; Calculate the receiver checksum
 		PUSH r16
 		PUSH r17
 		PUSH r18
@@ -218,10 +223,13 @@ process_received_data:
 		POP r17
 		POP r16
 
+		; Load the transmitter checksum from data buffer
 		LDS r20, data_buffer + BUFFER_SIZE + 0
 		LDS r21, data_buffer + BUFFER_SIZE + 1
 		LDS r22, data_buffer + BUFFER_SIZE + 2
 
+		; If the two are different, display "Err"
+		; Otherwise, display the two least significant bytes of the checksum
 		CP r20, r23
 		BRNE usartR_display_err
 		CP r21, r24
@@ -249,10 +257,6 @@ process_received_data:
 		POP r21
 		POP r20
 
-		; Deactivate USART Receiver and Receive Complete Interrupt
-		LDI r16, 0
-		STS UCSR0B, r16
-
 	POP r21
 	POP r20
 	POP r19
@@ -261,7 +265,8 @@ process_received_data:
 	POP r16
 	RET
 
-// ushort get_checksum();
+; Returns the checksum of the first "BUFFER_SIZE" bytes in the data buffer, which represent raw data
+; ushort get_checksum();
 get_checksum:
 	PUSH r19
 	PUSH r20
@@ -277,6 +282,7 @@ get_checksum:
 	CLR r20
 	CLR r21
 
+	; Loop over the data buffer and add the numbers to a 3-byte "variable"
 	getchecksum_start:
 	SETZ data_buffer
 	SUMZW r17, r18
@@ -299,6 +305,8 @@ get_checksum:
 	POP r19
 	RET
 
+; Displays "Err" on the shield, via the shield buffer
+; void display_err();
 display_err:
 	PUSH r16
 
@@ -311,7 +319,8 @@ display_err:
 	POP r16
 	RET
 
-// void store_on_shield_buffer(short n);
+; Displays a 2-byte number on the shield, in hexadecimal format
+; void store_on_shield_buffer(short n);
 store_on_shield_buffer:
 	PUSH r16
 	PUSH r17
@@ -350,7 +359,7 @@ store_on_shield_buffer:
 	POP r16
 	RET
 
-// timer 0 interruption
+; timer 0 interruption
 tmr0_start:
 	PUSH r0
 	IN r0, SREG
@@ -366,7 +375,8 @@ tmr0_end:
 	POP r0
 	RETI
 
-// void display_shield();
+; Displays one of the digits in the shield buffer
+; void display_shield();
 .DSEG
 	display_shield_digit: .BYTE 1
 .CSEG
@@ -378,24 +388,31 @@ display_shield:
 	PUSH r22
 	PUSH r1
 	PUSH r2
+
+	; Load index of digit to display
 	LDS r22, display_shield_digit
 
+	; Load digit to display
 	SETZ shield_buffer
 	SUMZ r22
 	LD r1, Z
 
+	; Load position of digit
 	SETZ digits_buffer
 	SUMZ r22
 	LD r2, Z
 
 	CALL write_shield
 
+	; Increases index, and sets it to 0 if it's not lower than 4
 	INC r22
 	CPI r22, 4
 	BREQ display_shield_reset
 
 display_shield_end:
+	; Store index of digit to display
 	STS display_shield_digit, r22
+
 	POP r2
 	POP r1
 	POP r22

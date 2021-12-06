@@ -1,5 +1,7 @@
 .ORG 0x0000
 	JMP start
+.ORG 0x0008
+	JMP pcint1_start
 .ORG 0x001C
 	JMP tmr0_start
 .ORG 0x0024
@@ -68,8 +70,8 @@ start:
 	STZ 0b00010001
 	
 	SETZ usartR_counter
-	STZ 0
-	STZ 0
+	STZ 0xFF
+	STZ 0x00
 
 
 	; Timer 0 handles the operation of reading the shield buffer and displaying the contents on the shield
@@ -90,13 +92,46 @@ start:
 	LDI r16, 0b11111111
 	STS UBRR0L, r16
 
+	; The button interrupt determines when to start the program
+	LDI r16, 0b00000010
+	STS PCMSK1, r16
+	STS PCICR, r16
+
 sei
 program:
 	rJMP program
 
+; pcint1 interruption
+pcint1_start:
+	PUSH r0
+	IN r0, SREG
+	PUSH r0
+	PUSH r16
+
+	LDS r16, usartR_counter + 0
+	CPI r16, 0xFF
+	BRNE pcint1_end
+
+	LDS r16, usartR_counter + 1
+	CPI r16, 0x00
+	BRNE pcint1_end
+
+	SETZ usartR_counter
+	STZ 0
+	STZ 0
+
+pcint1_end:
+	POP r16
+	POP r0
+	OUT SREG, r0
+	POP r0
+	RETI
 
 ; USART read complete interruption
 .DSEG
+	; 0xFF00 means program not started
+	; 0xFFFF means program finalized
+	; Any other value means the program is running
 	usartR_counter: .BYTE 2
 .CSEG
 usartR_start:

@@ -76,9 +76,6 @@ start:
 	STZ 0b00100010
 	STZ 0b00010001
 	
-	SETZ tmr1_hamming_buffer
-	STZ 0b11111111
-
 	SETZ tmr1_state
 	STZ -1
 
@@ -103,8 +100,6 @@ start:
 
 	LDI r16, 0b01000000
 	STS UCSR0A, r16
-	LDI r16, 0b00001000
-	STS UCSR0B, r16
 	LDI r16, 0b00001110
 	STS UCSR0C, r16
 	LDI r16, 0b00001111
@@ -133,6 +128,9 @@ pcint1_start:
 	CPI r16, 0xFF
 	BRNE pcint1_end
 
+	LDI r16, 0b00001000
+	STS UCSR0B, r16
+
 	LDI r16, 0
 	STS tmr1_state, r16
 
@@ -147,7 +145,6 @@ pcint1_end:
 .DSEG
 	tmr1_state: .BYTE 1
 	tmr1_counter: .BYTE 2
-	tmr1_hamming_buffer: .BYTE 1
 	tmr1_checksum: .BYTE 3
 .CSEG
 tmr1_start:

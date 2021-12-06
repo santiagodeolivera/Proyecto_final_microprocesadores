@@ -205,31 +205,19 @@ process_received_data:
 	CLR r17
 	CLR r18
 
-	LDI r19, -1
-
 	; Translate all hamming bytes into normal types via a loop
 	processreceiveddata_loop1_start:
-	CPI r19, -1
-	BRNE processreceiveddata_loop1_store_byte
 		SETZ hamming_buffer
 		SUMZW r17, r18
 		SUMZW r17, r18
-		LD r19, Z
-		RJMP processreceiveddata_loop1_start
-
-	processreceiveddata_loop1_store_byte:
-		SETZ hamming_buffer
-		SUMZW r17, r18
-		SUMZW r17, r18
-		INCW ZH, ZL
-		LD r20, Z
+		LD r19, Z+
+		LD r20, Z+
 
 		HAMMINGTOBYTE r19, r20, r21, r22, r23
 		SETZ data_buffer
 		SUMZW r17, r18
 		ST Z, r21
 
-		LDI r19, -1
 		INCW r17, r18
 
 	processreceiveddata_loop1_guard:

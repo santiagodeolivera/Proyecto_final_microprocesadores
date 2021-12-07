@@ -108,8 +108,9 @@ start:
 	STS UBRR0L, r16
 
 	; The button interrupt determines when to start the program
-	LDI r16, 0b00000010
+	LDI r16, 0b00001010
 	STS PCMSK1, r16
+	LDI r16, 0b00000010
 	STS PCICR, r16
 
 sei
@@ -123,6 +124,12 @@ pcint1_start:
 	IN r0, SREG
 	PUSH r0
 	PUSH r16
+
+	IN r16, PINC
+	SBRS r16, 3
+		RJMP pcint1_restart_pressed
+	SBRC r16, 1
+		RJMP pcint1_end
 
 	LDS r16, tmr1_state
 	CPI r16, 0xFF
@@ -141,6 +148,32 @@ pcint1_end:
 	POP r0
 	RETI
 
+pcint1_restart_pressed:
+	LDI r16, 0b00000000
+	STS UCSR0B, r16
+
+	CALL enable_timer_1
+
+	SETZ tmr1_state
+	STZ -1
+
+	SETZ tmr1_counter
+	STZ 0
+	STZ 0
+
+	SETZ tmr1_checksum
+	STZ 0
+	STZ 0
+	STZ 0
+
+	SETZ shield_buffer
+	STZ -1
+	STZ -1
+	STZ -1
+	STZ -1
+
+	RJMP pcint1_end
+
 ; timer 1 interruption
 .DSEG
 	tmr1_state: .BYTE 1
@@ -154,11 +187,13 @@ tmr1_start:
 	PUSH r16
 	PUSH r17
 
-	; If state is -1, return
+	; If state is -1 or 2, return
 	; If state is 0, write data
 	; If state is 1, send data
 	LDS r17, tmr1_state
 	CPI r17, -1
+		BREQ tmr1_end
+	CPI r17, 2
 		BREQ tmr1_end
 	CPI r17, 0
 		BREQ tmr1_call_write_data
@@ -181,10 +216,25 @@ tmr1_end:
 	RETI
 
 ; Disables the timer 1 and its interrupts
+enable_timer_1:
+	PUSH r16
+
+	LDI r16, 0b00001101   ; Clock period
+	STS TCCR1B, r16
+
+	LDS r16, TIMSK1
+	ORI r16, 0b00000010   ; Timer mask
+	STS TIMSK1, r16
+
+	POP r16
+	RET
+
+; Enables the timer 1 and its interrupts
 disable_timer_1:
 	PUSH r16
-	LDI r16, 0b00000000
+	LDI r16, 0b00000110
 	STS TCCR1B, r16
+	LDI r16, 0b00000010
 	STS TIMSK1, r16
 	POP r16
 	RET
@@ -291,7 +341,7 @@ write_data:
 		; Reset counter for next stage
 		LDI r21, 0
 		STS tmr1_counter + 0, r21
-	STS tmr1_counter + 1, r21
+		STS tmr1_counter + 1, r21
 
 writedata_end:
 	POP r22
@@ -322,6 +372,8 @@ send_data:
 	RJMP senddata_continue0
 
 	senddata_end0:
+		LDI r16, 2
+		STS tmr1_state, r16
 		LDI r16, 0
 		JMP senddata_end
 

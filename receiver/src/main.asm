@@ -93,8 +93,9 @@ start:
 	STS UBRR0L, r16
 
 	; The button interrupt determines when to start the program
-	LDI r16, 0b00000010
+	LDI r16, 0b00001010
 	STS PCMSK1, r16
+	LDI r16, 0b00000010
 	STS PCICR, r16
 
 sei
@@ -107,6 +108,12 @@ pcint1_start:
 	IN r0, SREG
 	PUSH r0
 	PUSH r16
+
+	IN r16, PINC
+	SBRS r16, 3
+		RJMP pcint1_reset_pressed
+	SBRC r16, 1
+		RJMP pcint1_end
 
 	LDS r16, usartR_counter + 0
 	CPI r16, 0xFF
@@ -126,6 +133,19 @@ pcint1_end:
 	OUT SREG, r0
 	POP r0
 	RETI
+
+pcint1_reset_pressed:
+	SETZ usartR_counter
+	STZ 0xFF
+	STZ 0x00
+
+	SETZ shield_buffer
+	STZ -1
+	STZ -1
+	STZ -1
+	STZ -1
+
+	RJMP pcint1_end
 
 ; USART read complete interruption
 .DSEG
